@@ -1,0 +1,24 @@
+vault {
+  address = "https://vault-iit.apps.silver.devops.gov.bc.ca"
+  renew_token = true
+  retry {
+    enabled = true
+    attempts = 12
+    backoff = "250ms"
+    max_backoff = "1m"
+  }
+}
+
+secret {
+    no_prefix = true
+    path = "apps/prod/fluent/fluent-bit"
+}
+
+exec {
+  command = "/apps_ux/agents/main/bin/fluent-bit -c /apps_ux/agents/main/conf/fluent-bit.conf"
+  splay = "5s"
+  env {
+    pristine = false
+    custom = ["HTTP_PROXY=http://test-forwardproxy.nrs.bcgov:23128","NO_PROXY=https://vault-iit.apps.silver.devops.gov.bc.ca,169.254.169.254"]
+  }
+}

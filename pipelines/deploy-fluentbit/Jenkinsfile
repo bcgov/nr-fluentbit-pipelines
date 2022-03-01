@@ -1,46 +1,104 @@
 pipeline {
     agent {
-        label 'sevenup'
+        label 'master'
     }
     environment {
         PATH = "/sw_ux/bin:$PATH"
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        VAULT_TOKEN = "${params.vault_token}"
-        SSH_USER = """${sh(
+        VAULT_TOKEN = "${params.vaultToken}"
+        FLUENTBIT_RELEASE = "${params.fluentbitRelease}"
+        BIN_DIR = "/sw_ux/bin"
+        AGENT_ROOT = "/apps_ux/agents"
+        AGENT_HOME = "/apps_ux/agents/main"
+        S6_SERVICE_DIR = "/apps_ux/s6_services/fluent-bit"
+        HOST = "${params.fluentbitHost}"
+        HTTP_PROXY = setHttpProxy(fluentbitEnvironment)
+        NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
+        ROLE_ID = "7cd218e3-b322-f394-4559-1caae025e075"
+        VAULT_RELEASE = "1.7.1"
+        ENVCONSUL_RELEASE = "0.11.0"
+        JQ_RELEASE = "1.6"
+        CD_USER = """${sh(
                 returnStdout: true,
-                script: '$VAULT_ADDR $VAULT_TOKEN vault kv get -field=SSH_USER apps/prod/fluent/fluentbit'
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins_isss_cdua"
             )}"""
-        SSH_PASS = """${sh(
+        CD_PASS = """${sh(
                 returnStdout: true,
-                script: '$VAULT_ADDR $VAULT_TOKEN vault kv get -field=SSH_PASS apps/prod/fluent/fluentbit'
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins_isss_cdua"
             )}"""
         CI_USER = """${sh(
                 returnStdout: true,
-                script: '$VAULT_ADDR $VAULT_TOKEN vault kv get -field=ARTIFACTORY_USER apps/prod/fluent/fluentbit'
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins_isss_ci"
             )}"""
         CI_PASS = """${sh(
                 returnStdout: true,
-                script: '$VAULT_ADDR $VAULT_TOKEN vault kv get -field=ARTIFACTORY_PASS apps/prod/fluent/fluentbit'
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins_isss_ci"
+            )}"""
+        WRAPPING_TOKEN = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -wrap-ttl=120s -f -field=wrapping_token auth/vs_apps_approle/role/fluent_fluent-bit_prod/secret-id"
+            )}"""
+        SECRET_ID = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$WRAPPING_TOKEN /sw_ux/bin/vault unwrap -field=secret_id"
+            )}"""
+        APP_TOKEN = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -force -field=token auth/vs_apps_approle/login role_id=$ROLE_ID secret_id=$SECRET_ID"
             )}"""
     }
     stages {
         stage('Checkout') {
             steps {
-                withCredentials([gitUsernamePassword(usernameVariable: 'CI_USER', passwordVariable: 'CI_PASS')]) {
-                    sh 'git checkout https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-deploy-fluentbit.git'
-                }
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/jenkinsfile']],
+                    doGenerateSubmoduleConfigurations: false,
+                    gitTool: 'jgit',
+                    submoduleCfg: [],
+                    userRemoteConfigs: [
+                        [
+                            credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
+                            url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/fluentbit/fluentbit-deploy.git'
+                        ]
+                    ]
+                ])
             }
         }
-        stage('get fluentbit package from artifactory') {
+        stage('Stop fluent bit') {
             steps {
-                // do some curl
-                // sh 'curl ...'
+                sh 'scripts/stop_fluentbit.sh'
             }
         }
-        stage('secure copy the package') {
+        stage('Deploy dependencies') {
             steps {
-                // sh "scp to a server, extract the archive"
+                sh 'scripts/deploy_dependencies.sh'
             }
         }
+        stage('Deploy config') {
+            steps {
+                sh 'scripts/deploy_config.sh'
+            }
+        }
+        stage('Deploy token') {
+            steps {
+                sh 'scripts/deploy_token.sh'
+            }
+        }
+        stage('Start fluent bit') {
+            steps {
+                sh 'scripts/start_fluentbit.sh'
+            }
+        }
+    }
+}
+
+// Helper Functions
+def setHttpProxy(fluentbitEnvironment) {
+    if("NON-PROD".equals(fluentbitEnvironment)) {
+        return "https://test-forwardproxy.nrs.bcgov:23128";
+    }
+    if("PROD".equals(fluentbitEnvironment)) {
+        return "https://forwardproxy.nrs.bcgov:23128";
     }
 }
