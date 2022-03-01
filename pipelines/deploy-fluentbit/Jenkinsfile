@@ -1,0 +1,46 @@
+pipeline {
+    agent {
+        label 'sevenup'
+    }
+    environment {
+        PATH = "/sw_ux/bin:$PATH"
+        VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
+        VAULT_TOKEN = "${params.vault_token}"
+        SSH_USER = """${sh(
+                returnStdout: true,
+                script: '$VAULT_ADDR $VAULT_TOKEN vault kv get -field=SSH_USER apps/prod/fluent/fluentbit'
+            )}"""
+        SSH_PASS = """${sh(
+                returnStdout: true,
+                script: '$VAULT_ADDR $VAULT_TOKEN vault kv get -field=SSH_PASS apps/prod/fluent/fluentbit'
+            )}"""
+        CI_USER = """${sh(
+                returnStdout: true,
+                script: '$VAULT_ADDR $VAULT_TOKEN vault kv get -field=ARTIFACTORY_USER apps/prod/fluent/fluentbit'
+            )}"""
+        CI_PASS = """${sh(
+                returnStdout: true,
+                script: '$VAULT_ADDR $VAULT_TOKEN vault kv get -field=ARTIFACTORY_PASS apps/prod/fluent/fluentbit'
+            )}"""
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                withCredentials([gitUsernamePassword(usernameVariable: 'CI_USER', passwordVariable: 'CI_PASS')]) {
+                    sh 'git checkout https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-deploy-fluentbit.git'
+                }
+            }
+        }
+        stage('get fluentbit package from artifactory') {
+            steps {
+                // do some curl
+                // sh 'curl ...'
+            }
+        }
+        stage('secure copy the package') {
+            steps {
+                // sh "scp to a server, extract the archive"
+            }
+        }
+    }
+}
