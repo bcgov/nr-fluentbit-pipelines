@@ -54,7 +54,7 @@ pipeline {
             steps {
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '*/jenkinsfile']],
+                    branches: [[name: '*/feat/funbucks']],
                     doGenerateSubmoduleConfigurations: false,
                     gitTool: 'jgit',
                     submoduleCfg: [],
