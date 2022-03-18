@@ -15,6 +15,7 @@ pipeline {
         S6_SERVICE_DIR = "/apps_ux/s6_services/fluent-bit"
         HOST = "${params.fluentbitHost}"
         HTTP_PROXY = setHttpProxy(fluentbitEnvironment)
+        HTTPS_PROXY = setHttpProxy(fluentbitEnvironment)
         NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
         ROLE_ID = "7cd218e3-b322-f394-4559-1caae025e075"
         VAULT_RELEASE = "1.7.1"
@@ -123,9 +124,9 @@ _auth=$pass
 // Helper Functions
 def setHttpProxy(fluentbitEnvironment) {
     if("NON-PROD".equals(fluentbitEnvironment)) {
-        return "https://test-forwardproxy.nrs.bcgov:23128";
+        return "http://test-forwardproxy.nrs.bcgov:23128";
     }
     if("PROD".equals(fluentbitEnvironment)) {
-        return "https://forwardproxy.nrs.bcgov:23128";
+        return "http://forwardproxy.nrs.bcgov:23128";
     }
 }
