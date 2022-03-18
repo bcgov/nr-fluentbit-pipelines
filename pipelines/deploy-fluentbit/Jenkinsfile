@@ -83,7 +83,12 @@ _auth=$pass
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'nr-funbucks']],
                     gitTool: 'jgit',
                     submoduleCfg: [],
-                    userRemoteConfigs: [[url: 'https://github.com/bcgov-nr/nr-funbucks.git']]
+                    userRemoteConfigs: [
+                        [
+                            credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
+                            url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-nr-funbucks.git'
+                        ]
+                    ]
                 ])
             }
 
