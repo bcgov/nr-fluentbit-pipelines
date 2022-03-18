@@ -88,7 +88,9 @@ _auth=$pass
 
         }
         stage('Build config') {
-            sh 'nr-funbucks/bin/dev gen -s ${params.funbucksServer}'
+            steps {
+                sh 'nr-funbucks/bin/dev gen -s ${params.funbucksServer}'
+            }
         }
         stage('Stop fluent bit') {
             steps {
