@@ -11,6 +11,7 @@ done
 SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
 export FLUENT_HOME="$( dirname "$SCRIPT_DIR" )"
+export FLUENT_CONF_HOME="${FLUENT_HOME}/conf"
 export LD_LIBRARY_PATH="${FLUENT_HOME}/lib"
 export FLUENT_VERSION=$("${FLUENT_HOME}"/bin/fluent-bit --version | grep 'Fluent Bit v' | awk '{print$3}' | sed 's/[^0-9\.]//g')
 export HOST_OS_TYPE='linux'

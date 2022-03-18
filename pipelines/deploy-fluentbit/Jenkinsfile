@@ -3,7 +3,9 @@ pipeline {
         label 'master'
     }
     environment {
-        PATH = "/sw_ux/bin:$PATH"
+        PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
+        PIPELINE_ARTIFACTORY_CREDS = credentials('d7d54e7d-10c1-4466-a6d6-82ea62699416')
+        FUNBUCKS_OUTPUT = "nr-funbucks/output"
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
         VAULT_TOKEN = "${params.vaultToken}"
         FLUENTBIT_RELEASE = "${params.fluentbitRelease}"
@@ -64,6 +66,29 @@ pipeline {
                     ]
                 ])
             }
+        }
+        stage('Setup funbucks') {
+            steps {
+                sh '''set +x; pass=`echo -n "$PIPELINE_ARTIFACTORY_CREDS_USR:$PIPELINE_ARTIFACTORY_CREDS_PSW" | openssl base64 -A`
+echo "email=$PIPELINE_ARTIFACTORY_CREDS_USR
+always-auth=true
+strict-ssl=false
+_auth=$pass
+" > .npmrc'''
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'nr-funbucks']],
+                    gitTool: 'jgit',
+                    submoduleCfg: [],
+                    userRemoteConfigs: [[url: 'https://github.com/bcgov-nr/nr-funbucks.git']]
+                ])
+            }
+
+        }
+        stage('Build config') {
+            sh 'nr-funbucks/bin/dev gen -s ${params.funbucksServer}'
         }
         stage('Stop fluent bit') {
             steps {
