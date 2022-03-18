@@ -90,6 +90,7 @@ _auth=$pass
                         ]
                     ]
                 ])
+                sh 'cd nr-funbucks; npm ci'
             }
 
         }
