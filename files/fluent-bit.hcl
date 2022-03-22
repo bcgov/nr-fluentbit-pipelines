@@ -19,6 +19,6 @@ exec {
   splay = "5s"
   env {
     pristine = false
-    custom = ["HTTP_PROXY=http://test-forwardproxy.nrs.bcgov:23128","NO_PROXY=https://vault-iit.apps.silver.devops.gov.bc.ca,169.254.169.254"]
+    custom = ["HTTP_PROXY=$HTTP_PROXY","NO_PROXY=https://vault-iit.apps.silver.devops.gov.bc.ca,169.254.169.254"]
   }
 }
