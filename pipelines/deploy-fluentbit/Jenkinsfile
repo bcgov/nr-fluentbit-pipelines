@@ -2,12 +2,7 @@ pipeline {
     agent {
         label 'master'
     }
-    parameters {
-        choice(name: 'fluentbitHost', choices: ['spaghettini', 'syncronicity', 'refresh choices'], description: 'Target host for fluent bit agent')
-        password(name: 'vaultToken', defaultValue: 'SECRET', description: 'User-generated Vault token')
-    }
     environment {
-        DUMMY_SPARSE_CHECKOUT_CONFIG = checkoutConfig("${params.fluentbitHost}")
         PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
         PIPELINE_ARTIFACTORY_CREDS = credentials('d7d54e7d-10c1-4466-a6d6-82ea62699416')
         FUNBUCKS_OUTPUT = "nr-funbucks/output"
@@ -70,7 +65,7 @@ pipeline {
             steps {
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '*/feat/funbucks']],
+                    branches: [[name: '*/jenkinsfile']],
                     doGenerateSubmoduleConfigurations: false,
                     gitTool: 'jgit',
                     submoduleCfg: [],
@@ -144,6 +139,9 @@ _auth=$pass
 
 // Helper Functions
 def checkoutConfig(fluentbitHost) {
+    if (fileExists("fb/config/server/${fluentbitHost}.json")) {
+        return
+    }
     checkout([
         $class: 'GitSCM',
         branches: [[name: '*/main']],
@@ -160,17 +158,19 @@ def checkoutConfig(fluentbitHost) {
             ]
         ]
     ])
-    return 'done'
 }
 def setFluentBitRelease(fluentbitHost) {
+    checkoutConfig(fluentbitHost)
     def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
     return props.fluentBitRelease
 }
 def setHost(fluentbitHost) {
+    checkoutConfig(fluentbitHost)
     def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
     return props.address
 }
 def setHttpProxy(fluentbitHost) {
+    checkoutConfig(fluentbitHost)
     def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
     return props.proxy
 }
