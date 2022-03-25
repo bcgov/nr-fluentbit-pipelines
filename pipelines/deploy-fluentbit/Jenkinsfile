@@ -2,20 +2,25 @@ pipeline {
     agent {
         label 'master'
     }
+    parameters {
+        choice(name: 'fluentbitHost', choices: ['spaghettini', 'syncronicity', 'refresh choices'], description: 'Target host for fluent bit agent')
+        password(name: 'vaultToken', defaultValue: 'SECRET', description: 'User-generated Vault token')
+    }
     environment {
+        DUMMY_SPARSE_CHECKOUT_CONFIG = checkoutConfig("${params.fluentbitHost}")
         PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
         PIPELINE_ARTIFACTORY_CREDS = credentials('d7d54e7d-10c1-4466-a6d6-82ea62699416')
         FUNBUCKS_OUTPUT = "nr-funbucks/output"
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
         VAULT_TOKEN = "${params.vaultToken}"
-        FLUENTBIT_RELEASE = "${params.fluentbitRelease}"
+        FLUENTBIT_RELEASE = setFluentBitRelease("${params.fluentbitHost}")
         BIN_DIR = "/sw_ux/bin"
         AGENT_ROOT = "/apps_ux/agents"
         AGENT_HOME = "/apps_ux/agents/main"
         S6_SERVICE_DIR = "/apps_ux/s6_services/fluent-bit"
-        HOST = "${params.fluentbitHost}"
-        HTTP_PROXY = setHttpProxy(fluentbitEnvironment)
-        HTTPS_PROXY = setHttpProxy(fluentbitEnvironment)
+        HOST = setHost("${params.fluentbitHost}")
+        HTTP_PROXY = setHttpProxy("${params.fluentbitHost}")
+        HTTPS_PROXY = setHttpProxy("${params.fluentbitHost}")
         NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
         ROLE_ID = "7cd218e3-b322-f394-4559-1caae025e075"
         VAULT_RELEASE = "1.7.1"
@@ -51,6 +56,16 @@ pipeline {
             )}"""
     }
     stages {
+        stage('Refresh params') {
+            steps {
+                script {
+                    if( params.fluentbitHost == 'refresh choices' ) {
+                        currentBuild.result = 'ABORTED'
+                        error("Aborting the build.")
+                    }
+                }
+            }
+        }
         stage('Checkout') {
             steps {
                 checkout([
@@ -96,7 +111,7 @@ _auth=$pass
         }
         stage('Build config') {
             steps {
-                sh "nr-funbucks/bin/dev gen -s ${params.funbucksServer}"
+                sh "nr-funbucks/bin/dev gen -m -s ${params.fluentbitHost}"
             }
         }
         stage('Stop fluent bit') {
@@ -128,11 +143,34 @@ _auth=$pass
 }
 
 // Helper Functions
-def setHttpProxy(fluentbitEnvironment) {
-    if("NON-PROD".equals(fluentbitEnvironment)) {
-        return "http://test-forwardproxy.nrs.bcgov:23128";
-    }
-    if("PROD".equals(fluentbitEnvironment)) {
-        return "http://forwardproxy.nrs.bcgov:23128";
-    }
+def checkoutConfig(fluentbitHost) {
+    checkout([
+        $class: 'GitSCM',
+        branches: [[name: '*/main']],
+        doGenerateSubmoduleConfigurations: false,
+        extensions: [
+            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'fb'],
+            [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[[$class:'SparseCheckoutPath', path: "config/server/${fluentbitHost}.json"]]]
+        ],
+        submoduleCfg: [],
+        userRemoteConfigs: [
+            [
+                credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
+                url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-nr-funbucks.git'
+            ]
+        ]
+    ])
+    return 'done'
+}
+def setFluentBitRelease(fluentbitHost) {
+    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
+    return props.fluentBitRelease
+}
+def setHost(fluentbitHost) {
+    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
+    return props.address
+}
+def setHttpProxy(fluentbitHost) {
+    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
+    return props.proxy
 }
