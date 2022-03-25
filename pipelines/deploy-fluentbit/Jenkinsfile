@@ -11,8 +11,7 @@ pipeline {
         FLUENTBIT_RELEASE = setFluentBitRelease("${params.fluentbitHost}")
         BIN_DIR = "/sw_ux/bin"
         AGENT_ROOT = "/apps_ux/agents"
-        AGENT_HOME = "/apps_ux/agents/main"
-        S6_SERVICE_DIR = "/apps_ux/s6_services/fluent-bit"
+        S6_SERVICE_HOME = "/apps_ux/s6_services"
         HOST = setHost("${params.fluentbitHost}")
         HTTP_PROXY = setHttpProxy("${params.fluentbitHost}")
         HTTPS_PROXY = setHttpProxy("${params.fluentbitHost}")
@@ -21,6 +20,10 @@ pipeline {
         VAULT_RELEASE = "1.7.1"
         ENVCONSUL_RELEASE = "0.11.0"
         JQ_RELEASE = "1.6"
+        TMP_DIR = """${sh(
+                returnStdout: true,
+                script: "set -x; mktemp -d -t fluent-bit-XXXXXXXXXXXXXXXXXXXX"
+            )}"""
         CD_USER = """${sh(
                 returnStdout: true,
                 script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins_isss_cdua"
@@ -114,19 +117,9 @@ _auth=$pass
                 sh 'scripts/stop_fluentbit.sh'
             }
         }
-        stage('Deploy dependencies') {
+        stage('Deploy agents') {
             steps {
-                sh 'scripts/deploy_dependencies.sh'
-            }
-        }
-        stage('Deploy config') {
-            steps {
-                sh 'scripts/deploy_config.sh'
-            }
-        }
-        stage('Deploy token') {
-            steps {
-                sh 'scripts/deploy_token.sh'
+                sh 'scripts/deploy_agents.sh'
             }
         }
         stage('Start fluent bit') {

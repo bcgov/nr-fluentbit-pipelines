@@ -15,7 +15,7 @@ secret {
 }
 
 exec {
-  command = "/apps_ux/agents/main/bin/fluent-bit -c /apps_ux/agents/main/conf/fluent-bit.conf"
+  command = "{{ apm_agent_home }}/bin/fluent-bit -c {{ apm_agent_home }}/conf/fluent-bit.conf"
   splay = "5s"
   env {
     pristine = false
