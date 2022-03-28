@@ -12,6 +12,10 @@ pipeline {
                 returnStdout: true,
                 script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins_isss_cdua"
             )}"""
+        CD_PASS = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins_isss_cdua"
+            )}"""
     }
     stages {
         stage('Stop fluent bit') {
