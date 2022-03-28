@@ -4,12 +4,12 @@ pipeline {
     }
     environment {
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        VAULT_TOKEN = "${params.vaultToken}"
+        VAULT_TOKEN = params.vaultToken
         PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
         BIN_DIR = "/sw_ux/bin"
         AGENT_ROOT = "/apps_ux/agents"
         S6_SERVICE_HOME = "/apps_ux/s6_services"
-        HOST = setHost("${params.fluentbitHost}")
+        HOST = setHost(params.fluentbitHost)
         CD_USER = """${sh(
                 returnStdout: true,
                 script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins_isss_cdua"
@@ -17,6 +17,19 @@ pipeline {
         CD_PASS = """${sh(
                 returnStdout: true,
                 script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins_isss_cdua"
+            )}"""
+        ROLE_ID = "7cd218e3-b322-f394-4559-1caae025e075"
+        WRAPPING_TOKEN = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -wrap-ttl=120s -f -field=wrapping_token auth/vs_apps_approle/role/fluent_fluent-bit_prod/secret-id"
+            )}"""
+        SECRET_ID = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$WRAPPING_TOKEN /sw_ux/bin/vault unwrap -field=secret_id"
+            )}"""
+        APP_TOKEN = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -force -field=token auth/vs_apps_approle/login role_id=$ROLE_ID secret_id=$SECRET_ID"
             )}"""
     }
     stages {

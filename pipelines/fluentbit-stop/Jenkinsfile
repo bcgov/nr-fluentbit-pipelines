@@ -4,12 +4,12 @@ pipeline {
     }
     environment {
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        VAULT_TOKEN = "${params.vaultToken}"
+        VAULT_TOKEN = params.vaultToken
         PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
         BIN_DIR = "/sw_ux/bin"
         AGENT_ROOT = "/apps_ux/agents"
         S6_SERVICE_HOME = "/apps_ux/s6_services"
-        HOST = setHost("${params.fluentbitHost}")
+        HOST = setHost(params.fluentbitHost)
         CD_USER = """${sh(
                 returnStdout: true,
                 script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins_isss_cdua"

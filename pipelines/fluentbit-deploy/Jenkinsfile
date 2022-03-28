@@ -7,16 +7,15 @@ pipeline {
         PIPELINE_ARTIFACTORY_CREDS = credentials('d7d54e7d-10c1-4466-a6d6-82ea62699416')
         FUNBUCKS_OUTPUT = "nr-funbucks/output"
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        VAULT_TOKEN = "${params.vaultToken}"
-        FLUENTBIT_RELEASE = setFluentBitRelease("${params.fluentbitHost}")
+        VAULT_TOKEN = params.vaultToken
+        FLUENTBIT_RELEASE = setFluentBitRelease(params.fluentbitHost)
         BIN_DIR = "/sw_ux/bin"
         AGENT_ROOT = "/apps_ux/agents"
         S6_SERVICE_HOME = "/apps_ux/s6_services"
-        HOST = setHost("${params.fluentbitHost}")
-        HTTP_PROXY = setHttpProxy("${params.fluentbitHost}")
-        HTTPS_PROXY = setHttpProxy("${params.fluentbitHost}")
+        HOST = setHost(params.fluentbitHost)
+        HTTP_PROXY = setHttpProxy(params.fluentbitHost)
+        HTTPS_PROXY = setHttpProxy(params.fluentbitHost)
         NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        ROLE_ID = "7cd218e3-b322-f394-4559-1caae025e075"
         VAULT_RELEASE = "1.7.1"
         ENVCONSUL_RELEASE = "0.11.0"
         JQ_RELEASE = "1.6"
@@ -36,18 +35,6 @@ pipeline {
         CI_PASS = """${sh(
                 returnStdout: true,
                 script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins_isss_ci"
-            )}"""
-        WRAPPING_TOKEN = """${sh(
-                returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -wrap-ttl=120s -f -field=wrapping_token auth/vs_apps_approle/role/fluent_fluent-bit_prod/secret-id"
-            )}"""
-        SECRET_ID = """${sh(
-                returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$WRAPPING_TOKEN /sw_ux/bin/vault unwrap -field=secret_id"
-            )}"""
-        APP_TOKEN = """${sh(
-                returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -force -field=token auth/vs_apps_approle/login role_id=$ROLE_ID secret_id=$SECRET_ID"
             )}"""
     }
     stages {
