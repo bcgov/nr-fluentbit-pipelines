@@ -20,7 +20,7 @@ pipeline {
         VAULT_RELEASE = "1.7.1"
         ENVCONSUL_RELEASE = "0.11.0"
         JQ_RELEASE = "1.6"
-        TMP_DIR = "/tmp/fluent-bit.${generator( (('A'..'Z')+('0'..'9')).join(), 9 )}"
+        TMP_DIR = "/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}"
         CD_USER = """${sh(
                 returnStdout: true,
                 script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins_isss_cdua"
@@ -159,10 +159,4 @@ def setHttpProxy(fluentbitHost) {
     checkoutConfig(fluentbitHost)
     def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
     return props.proxy
-}
-
-def generator = { String alphabet, int n ->
-  new Random().with {
-    (1..n).collect { alphabet[ java.util.Random.nextInt( alphabet.length() ) ] }.join()
-  }
 }
