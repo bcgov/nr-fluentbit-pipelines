@@ -104,22 +104,22 @@ _auth=$pass
                 sh 'scripts/copy_files.sh'
             }
         }
-        // stage('Stop fluent bit') {
-        //     steps {
-        //         build job: 'FLUENTBIT/fluentbit-stop', parameters: [[$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost]]
-        //         // sh 'scripts/stop_fluentbit.sh'
-        //     }
-        // }
-        // stage('Deploy agents') {
-        //     steps {
-        //         sh 'scripts/deploy_agents.sh'
-        //     }
-        // }
-        // stage('Start fluent bit') {
-        //     steps {
-        //         sh 'scripts/start_fluentbit.sh'
-        //     }
-        // }
+        stage('Stop fluent bit') {
+            steps {
+                build job: 'FLUENTBIT/fluentbit-stop', parameters: [[$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost]]
+                // sh 'scripts/stop_fluentbit.sh'
+            }
+        }
+        stage('Deploy agents') {
+            steps {
+                sh 'scripts/deploy_agents.sh'
+            }
+        }
+        stage('Start fluent bit') {
+            steps {
+                sh 'scripts/start_fluentbit.sh'
+            }
+        }
     }
 }
 

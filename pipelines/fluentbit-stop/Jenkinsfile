@@ -3,6 +3,8 @@ pipeline {
         label 'master'
     }
     environment {
+        VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
+        VAULT_TOKEN = "${params.vaultToken}"
         PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
         BIN_DIR = "/sw_ux/bin"
         AGENT_ROOT = "/apps_ux/agents"
