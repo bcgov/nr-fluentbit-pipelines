@@ -28,7 +28,7 @@ pipeline {
     }
 }
 
-def checkoutDone = false
+checkoutDone = false
 // Helper Functions
 def checkoutConfig(fluentbitHost) {
     if (checkoutDone && fileExists("fb/config/server/${fluentbitHost}.json")) {
