@@ -40,12 +40,13 @@ pipeline {
         }
     }
 }
-
+def checkoutDone = false
 // Helper Functions
 def checkoutConfig(fluentbitHost) {
-    if (fileExists("fb/config/server/${fluentbitHost}.json")) {
+    if (checkoutDone && fileExists("fb/config/server/${fluentbitHost}.json")) {
         return
     }
+    checkoutDone = true
     checkout([
         $class: 'GitSCM',
         branches: [[name: '*/main']],
