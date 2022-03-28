@@ -1,3 +1,5 @@
+import groovy.transform.Field
+
 pipeline {
     agent {
         label 'master'
@@ -115,7 +117,8 @@ _auth=$pass
     }
 }
 
-checkoutDone = false
+@Field
+def checkoutDone = false
 // Helper Functions
 def checkoutConfig(fluentbitHost) {
     if (checkoutDone && fileExists("fb/config/server/${fluentbitHost}.json")) {
