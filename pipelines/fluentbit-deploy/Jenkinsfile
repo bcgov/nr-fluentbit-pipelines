@@ -95,7 +95,7 @@ _auth=$pass
             steps {
                 build job: 'FLUENTBIT/fluentbit-stop', parameters: [
                     [$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost],
-                    [$class: 'SecretParameterValue', name: 'vaultToken', value: params.vaultToken]
+                    [$class: 'PasswordParameterValue', name: 'vaultToken', value: params.vaultToken]
                 ]
             }
         }
@@ -108,7 +108,7 @@ _auth=$pass
             steps {
                 build job: 'FLUENTBIT/fluentbit-start', parameters: [
                     [$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost],
-                    [$class: 'SecretParameterValue', name: 'vaultToken', value: params.vaultToken]
+                    [$class: 'PasswordParameterValue', name: 'vaultToken', value: params.vaultToken]
                 ]
             }
         }
