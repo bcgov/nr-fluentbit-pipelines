@@ -21,18 +21,11 @@ chmod 755 $BIN_DIR/jq
 # extract bin and lib
 cd $TMP_DIR/bin
 tar -zxvf $TMP_DIR/bin/fluent-bit.tar.gz --strip-components=1
-# move dependencies to agent directories
-for agent in \${AGENTS[@]} ; do
-    AGENT=\$(basename \$agent)
-    AGENT_HOME=$AGENT_ROOT/\$AGENT
-    cp fluent-bit \$AGENT_HOME/bin
-    cp libpq.so.5 \$AGENT_HOME/lib
-done
 # unzip vault and envconsul
 unzip -o $TMP_DIR/bin/vault_1.7.1_linux_amd64.zip -d $BIN_DIR
 unzip -o $TMP_DIR/bin/envconsul_0.11.0_linux_amd64.zip -d $BIN_DIR
 
-# deploy config
+# deploy config and exec
 cd $TMP_DIR
 echo "Working directory: \$(pwd)"
 AGENTS=\$(ls -d output/fluent-bit.*)
@@ -47,6 +40,8 @@ for agent in \${AGENTS[@]} ; do
     mkdir -p $S6_SERVICE_HOME/\$AGENT
     chmod 775 $S6_SERVICE_HOME/\$AGENT
     # Copy files
+    cp $TMP_DIR/bin/fluent-bit \$AGENT_HOME/bin
+    cp $TMP_DIR/bin/libpq.so.5 \$AGENT_HOME/lib
     cp -R $TMP_DIR/output/\$AGENT/* \$AGENT_HOME/conf
     sed -e "s,\\\$HTTP_PROXY,\$HTTP_PROXY,g" -e "s,{{ apm_agent_home }},\$AGENT_HOME,g" $TMP_DIR/files/fluent-bit.hcl > \$AGENT_HOME/conf/fluent-bit.hcl
     cp $TMP_DIR/files/fluentbitw \$AGENT_HOME/bin
