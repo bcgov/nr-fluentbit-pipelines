@@ -53,11 +53,9 @@ for agent in \${AGENTS[@]} ; do
     cp -R $TMP_DIR/output/\$AGENT/* \$AGENT_HOME/conf
     sed -e "s,\\\$HTTP_PROXY,\$HTTP_PROXY,g" -e "s,{{ apm_agent_home }},\$AGENT_HOME,g" $TMP_DIR/files/fluent-bit.hcl > \$AGENT_HOME/conf/fluent-bit.hcl
     cp $TMP_DIR/files/fluentbitw \$AGENT_HOME/bin
+    cp $TMP_DIR/files/.env \$AGENT_HOME/bin/.env
     sed "s,{{ apm_agent_home }},\$AGENT_HOME,g" $TMP_DIR/files/fluent-bit-logrotate.conf > \$AGENT_HOME/\$AGENT-logrotate.conf
     ln -sfn \$AGENT_HOME/bin/fluentbitw $S6_SERVICE_HOME/\$AGENT/run
-    # TODO: revoke previous token
-    # deploy new token to .env file
-    sed 's/VAULT_TOKEN=.*/VAULT_TOKEN="${APP_TOKEN}"/g' $TMP_DIR/files/.env > \$AGENT_HOME/bin/.env
     chmod 775 \$AGENT_HOME/bin/fluentbitw \$AGENT_HOME/db \$AGENT_HOME/logs
 done
 EOF

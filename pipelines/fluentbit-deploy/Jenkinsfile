@@ -106,8 +106,10 @@ _auth=$pass
         }
         stage('Stop fluent bit') {
             steps {
-                build job: 'FLUENTBIT/fluentbit-stop', parameters: [[$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost]]
-                // sh 'scripts/stop_fluentbit.sh'
+                build job: 'FLUENTBIT/fluentbit-stop', parameters: [
+                    [$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost],
+                    [$class: 'StringParameterValue', name: 'vaultToken', value: params.vaultToken]
+                ]
             }
         }
         stage('Deploy agents') {
@@ -117,7 +119,10 @@ _auth=$pass
         }
         stage('Start fluent bit') {
             steps {
-                sh 'scripts/start_fluentbit.sh'
+                build job: 'FLUENTBIT/fluentbit-start', parameters: [
+                    [$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost],
+                    [$class: 'StringParameterValue', name: 'vaultToken', value: params.vaultToken]
+                ]
             }
         }
     }
