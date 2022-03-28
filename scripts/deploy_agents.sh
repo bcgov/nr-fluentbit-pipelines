@@ -37,8 +37,8 @@ tar -zxvf /tmp/fluent-bit.tar.gz --strip-components=1
 for agent in \${AGENTS[@]} ; do
     AGENT=\$(basename \$agent)
     AGENT_HOME=$AGENT_ROOT/\$AGENT
-    mv fluent-bit \$AGENT_HOME/bin
-    mv libpq.so.5 \$AGENT_HOME/lib    
+    cp fluent-bit \$AGENT_HOME/bin
+    cp libpq.so.5 \$AGENT_HOME/lib
 done
 # unzip vault and envconsul
 unzip -o /tmp/vault_1.7.1_linux_amd64.zip -d $BIN_DIR
@@ -46,9 +46,7 @@ unzip -o /tmp/envconsul_0.11.0_linux_amd64.zip -d $BIN_DIR
 # deploy config
 cd \$TMP_DIR
 echo "Working directory: \$(pwd)"
-# TODO: Figure out why the http proxy var is https and not http
-HTTP_PROXY='http://test-forwardproxy.nrs.bcgov:23128'
-echo \$HTTP_PROXY
+
 for agent in \${AGENTS[@]} ; do
     AGENT=\$(basename \$agent)
     AGENT_HOME=$AGENT_ROOT/\$AGENT

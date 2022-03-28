@@ -54,16 +54,6 @@ pipeline {
             )}"""
     }
     stages {
-        stage('Refresh params') {
-            steps {
-                script {
-                    if( params.fluentbitHost == 'refresh choices' ) {
-                        currentBuild.result = 'ABORTED'
-                        error("Aborting the build.")
-                    }
-                }
-            }
-        }
         stage('Checkout') {
             steps {
                 checkout([
