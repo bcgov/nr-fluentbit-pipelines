@@ -101,6 +101,11 @@ _auth=$pass
                 ]
             }
         }
+        stage('Remove previous agents') {
+            steps {
+                sh 'scripts/remove_agents.sh'
+            }
+        }
         stage('Deploy agents') {
             steps {
                 sh 'scripts/deploy_agents.sh'
