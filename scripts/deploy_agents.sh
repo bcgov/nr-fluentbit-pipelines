@@ -28,7 +28,6 @@ unzip -o $TMP_DIR/bin/envconsul_0.11.0_linux_amd64.zip -d $BIN_DIR
 # deploy config and exec
 cd $TMP_DIR
 echo "Working directory: \$(pwd)"
-<<<<<<< HEAD
 AGENTS=\$(ls -d output/fluent-bit.*)
 for agent in \${AGENTS[@]} ; do
     AGENT=\$(basename \$agent)
@@ -48,28 +47,17 @@ for agent in \${AGENTS[@]} ; do
     cp $TMP_DIR/files/fluentbitw \$AGENT_HOME/bin
     cp $TMP_DIR/files/.env \$AGENT_HOME/bin/.env.template
     sed "s,{{ apm_agent_home }},\$AGENT_HOME,g" $TMP_DIR/files/fluent-bit-logrotate.conf > \$AGENT_HOME/\$AGENT-logrotate.conf
-=======
-# TODO: Figure out why the http proxy var is https and not http
-HTTP_PROXY='http://test-forwardproxy.nrs.bcgov:23128'
-echo "\$HTTP_PROXY"
-for agent in \${AGENTS[@]} ; do
-    AGENT=\$(basename \$agent)
-    AGENT_HOME=$AGENT_ROOT/\$AGENT
-    cp -R output/\$AGENT/* \$AGENT_HOME/conf
-    sed -e "s,\\\$HTTP_PROXY,\$HTTP_PROXY,g" -e "s,{{ apm_agent_home }},\$AGENT_HOME,g" fluent-bit.hcl > \$AGENT_HOME/conf/fluent-bit.hcl
-    cp fluentbitw \$AGENT_HOME/bin
->>>>>>> deploy log rotation
     ln -sfn \$AGENT_HOME/bin/fluentbitw $S6_SERVICE_HOME/\$AGENT/run
     chmod 775 \$AGENT_HOME/bin/fluentbitw \$AGENT_HOME/db \$AGENT_HOME/logs \$AGENT_HOME/bin
 done
 exit
 sudo -su wwwsvr
 # set temp directory
-TMP_DIR="$TMP_DIR"
-echo "Temp directory: \$TMP_DIR"
+echo "Temp directory: $TMP_DIR"
 # deploy log rotation
-cd \$TMP_DIR
+cd $TMP_DIR
 echo "Working directory: \$(pwd)"
+AGENTS=\$(ls -d output/fluent-bit.*)
 for agent in \${AGENTS[@]} ; do
     AGENT=\$(basename \$agent)
     AGENT_HOME=$AGENT_ROOT/\$AGENT
