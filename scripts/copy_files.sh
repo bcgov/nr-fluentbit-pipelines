@@ -12,6 +12,6 @@ EOF
 sshpass -p $CD_PASS scp -q -r files $CD_USER@$HOST:$TMP_DIR
 sshpass -p $CD_PASS scp -q -r $FUNBUCKS_OUTPUT $CD_USER@$HOST:$TMP_DIR
 sshpass -p $CD_PASS ssh -q $CD_USER@$HOST /bin/bash <<EOF
-chmod -R 775 files
-chmod -R 775 output
+chmod -R 775 $TMP_DIR/files
+chmod -R 775 $TMP_DIR/output
 EOF
