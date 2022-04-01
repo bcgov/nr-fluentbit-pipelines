@@ -41,3 +41,4 @@ for agent in \${AGENTS[@]} ; do
         rm -rf \$AGENT_HOME
     fi
 done
+EOF
