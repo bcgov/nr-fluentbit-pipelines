@@ -28,6 +28,12 @@ unzip -o $TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip -d $BIN_DIR
 # deploy config and exec
 cd $TMP_DIR
 echo "Working directory: \$(pwd)"
+mkdir -p /apps_ux/logs/agents/fluent-bit
+chmod 775 /apps_ux/logs/agents
+chmod 775 /apps_ux/logs/agents/fluent-bit
+mkdir -p /apps_data/agents/fluent-bit
+chmod 775 /apps_data/agents
+chmod 775 /apps_data/agents/fluent-bit
 AGENTS=\$(ls -d output/fluent-bit.*)
 for agent in \${AGENTS[@]} ; do
     AGENT=\$(basename \$agent)
@@ -36,9 +42,9 @@ for agent in \${AGENTS[@]} ; do
         mv \$AGENT_HOME $TMP_DIR/backup/\$AGENT
     fi
     # create agent and service directories
-    mkdir -p \$AGENT_HOME/{bin,conf,db,lib,logs}
+    mkdir -p \$AGENT_HOME/{bin,conf,lib}
     chmod 775 \$AGENT_HOME
-    chmod 775 \$AGENT_HOME/{bin,conf,db,lib,logs}
+    chmod 775 \$AGENT_HOME/{bin,conf,lib}
     mkdir -p $S6_SERVICE_HOME/\$AGENT
     chmod 775 $S6_SERVICE_HOME/\$AGENT
     # Copy files
@@ -51,7 +57,7 @@ for agent in \${AGENTS[@]} ; do
     ln -sfn \$AGENT_HOME/bin/fluentbitw $S6_SERVICE_HOME/\$AGENT/run
     chmod 664 \$AGENT_HOME/bin/.env.template
     chmod 755 \$AGENT_HOME/bin/fluent-bit \$AGENT_HOME/bin/fluentbitw \$AGENT_HOME/bin
-    chmod 775 \$AGENT_HOME/db \$AGENT_HOME/logs \$AGENT_HOME/conf
+    chmod 775 \$AGENT_HOME/conf
     chmod -R +r \$AGENT_HOME/conf
     chmod -R +X \$AGENT_HOME/conf
 done
@@ -59,14 +65,15 @@ exit
 sudo -su wwwsvr
 # set temp directory
 echo "Temp directory: $TMP_DIR"
+# Trigger adding
+/sw_ux/s6/bin/s6-svscanctl -a $S6_SERVICE_HOME
 # deploy log rotation
 cd $TMP_DIR
 echo "Working directory: \$(pwd)"
 AGENTS=\$(ls -d output/fluent-bit.*)
 for agent in \${AGENTS[@]} ; do
     AGENT=\$(basename \$agent)
-    AGENT_HOME=$AGENT_ROOT/\$AGENT
-    sed "s,{{ apm_agent_home }},\$AGENT_HOME,g" $TMP_DIR/files/fluent-bit-logrotate.conf > /apps_ux/wwwsvr/\$AGENT-logrotate.conf
+    sed "s,{{ apm_agent_log }},/apps_ux/logs/agents/fluent-bit/\$AGENT.log,g" $TMP_DIR/files/fluent-bit-logrotate.conf > /apps_ux/wwwsvr/\$AGENT-logrotate.conf
     croncmd="/sbin/logrotate /apps_ux/wwwsvr/\$AGENT-logrotate.conf --state /apps_ux/wwwsvr/\$AGENT-logrotate-state --verbose"
     cronjob="59 23 * * * \$croncmd"
     ( crontab -l | grep -v -F "\$croncmd" ; echo "\$cronjob" ) | crontab -

@@ -2,17 +2,20 @@
 set +x
 sshpass -p $CD_PASS ssh -q $CD_USER@$HOST /bin/bash <<EOF
 
-# remove previously deployed s6 event/supervise directories
+# remove previously deployed s6 event/supervise directories and .env file
 sudo -su wwwsvr
 AGENTS=\$(ls -d $AGENT_ROOT/fluent-bit.*)
 for agent in \${AGENTS[@]} ; do
     AGENT=\$(basename \$agent)
+    AGENT_HOME=$AGENT_ROOT/\$AGENT
     if [ -r $S6_SERVICE_HOME/\$AGENT/event ]; then
         rm -rf $S6_SERVICE_HOME/\$AGENT/event
     fi
     if [ -r $S6_SERVICE_HOME/\$AGENT/supervise ]; then
         rm -rf $S6_SERVICE_HOME/\$AGENT/supervise
     fi
+    # Remove .env file
+    rm \$AGENT_HOME/bin/.env
 done
 exit
 
@@ -24,10 +27,11 @@ for agent in \${AGENTS[@]} ; do
     if [ -r $S6_SERVICE_HOME/\$AGENT ]; then
         rm -rf $S6_SERVICE_HOME/\$AGENT
     fi
-    if [ -r $S6_SERVICE_HOME/\$AGENT ]; then
-        rm -rf $S6_SERVICE_HOME/\$AGENT
-    fi
 done
+
+# Tidy up s6 services
+/sw_ux/s6/bin/s6-svscanctl -n $S6_SERVICE_HOME
+/sw_ux/s6/bin/s6-svscanctl -z $S6_SERVICE_HOME
 
 # remove previously deployed agents
 for agent in \${AGENTS[@]} ; do
