@@ -36,7 +36,9 @@ for agent in \${AGENTS[@]} ; do
         mv \$AGENT_HOME $TMP_DIR/backup/\$AGENT
     fi
     # create agent and service directories
-    mkdir -p \$AGENT_HOME/{bin,conf,db,lib,logs,scripts}
+    mkdir -p \$AGENT_HOME/{bin,conf,db,lib,logs}
+    chmod 775 \$AGENT_HOME
+    chmod 775 \$AGENT_HOME/{bin,conf,db,lib,logs}
     mkdir -p $S6_SERVICE_HOME/\$AGENT
     chmod 775 $S6_SERVICE_HOME/\$AGENT
     # Copy files
