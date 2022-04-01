@@ -1,4 +1,5 @@
 #!/bin/sh
+echo $TMP_DIR
 set +x
 sshpass -p $CD_PASS ssh -q $CD_USER@$HOST /bin/bash <<EOF
 # become wwwadm
