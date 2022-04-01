@@ -28,9 +28,6 @@ unzip -o $TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip -d $BIN_DIR
 # deploy config and exec
 cd $TMP_DIR
 echo "Working directory: \$(pwd)"
-mkdir -p /apps_ux/logs/agents/fluent-bit
-chmod 775 /apps_ux/logs/agents
-chmod 775 /apps_ux/logs/agents/fluent-bit
 mkdir -p /apps_data/agents/fluent-bit
 chmod 775 /apps_data/agents
 chmod 775 /apps_data/agents/fluent-bit
@@ -70,6 +67,9 @@ echo "Temp directory: $TMP_DIR"
 # deploy log rotation
 cd $TMP_DIR
 echo "Working directory: \$(pwd)"
+mkdir -p /apps_ux/logs/agents/fluent-bit
+chmod 775 /apps_ux/logs/agents
+chmod 775 /apps_ux/logs/agents/fluent-bit
 AGENTS=\$(ls -d output/fluent-bit.*)
 for agent in \${AGENTS[@]} ; do
     AGENT=\$(basename \$agent)
