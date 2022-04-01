@@ -125,6 +125,9 @@ def checkoutConfig(fluentbitHost) {
         return
     }
     checkoutDone = true
+    dir("fb") {
+        deleteDir()
+    }
     checkout([
         $class: 'GitSCM',
         branches: [[name: '*/main']],
