@@ -22,8 +22,8 @@ chmod 755 $BIN_DIR/jq
 cd $TMP_DIR/bin
 tar -zxvf $TMP_DIR/bin/fluent-bit.tar.gz --strip-components=1
 # unzip vault and envconsul
-unzip -o $TMP_DIR/bin/vault_1.7.1_linux_amd64.zip -d $BIN_DIR
-unzip -o $TMP_DIR/bin/envconsul_0.11.0_linux_amd64.zip -d $BIN_DIR
+unzip -o $TMP_DIR/bin/vault_${VAULT_RELEASE}_linux_amd64.zip -d $BIN_DIR
+unzip -o $TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip -d $BIN_DIR
 
 # deploy config and exec
 cd $TMP_DIR
