@@ -17,7 +17,7 @@ for agent in \${AGENTS[@]} ; do
     # Remove .env file
     rm \$AGENT_HOME/bin/.env
     # Tidy up s6 services
-    /sw_ux/s6/bin/s6-svc -x $S6_SERVICE_HOME/\$AGENT/
+    /sw_ux/s6/bin/s6-svc -d $S6_SERVICE_HOME/\$AGENT/
 done
 exit
 
@@ -39,4 +39,11 @@ for agent in \${AGENTS[@]} ; do
         rm -rf \$AGENT_HOME
     fi
 done
+exit
+
+sudo -su wwwsvr
+# Tidy up s6 services
+/sw_ux/s6/bin/s6-svscanctl -n $S6_SERVICE_HOME
+/sw_ux/s6/bin/s6-svscanctl -z $S6_SERVICE_HOME
+exit
 EOF
