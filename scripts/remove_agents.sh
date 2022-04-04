@@ -43,7 +43,7 @@ exit
 
 sudo -su wwwsvr
 # Tidy up s6 services
-/sw_ux/s6/bin/s6-svscanctl -n $S6_SERVICE_HOME
+/sw_ux/s6/bin/s6-svscanctl -an $S6_SERVICE_HOME
 /sw_ux/s6/bin/s6-svscanctl -z $S6_SERVICE_HOME
 exit
 EOF
