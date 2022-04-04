@@ -54,9 +54,7 @@ for agent in \${AGENTS[@]} ; do
     ln -sfn \$AGENT_HOME/bin/fluentbitw $S6_SERVICE_HOME/\$AGENT/run
     chmod 664 \$AGENT_HOME/bin/.env.template
     chmod 755 \$AGENT_HOME/bin/fluent-bit \$AGENT_HOME/bin/fluentbitw
-    chmod 775 \$AGENT_HOME/conf \$AGENT_HOME/bin
-    chmod -R +r \$AGENT_HOME/conf
-    chmod -R +X \$AGENT_HOME/conf
+    chmod -R a+r,a+X \$AGENT_HOME/conf
 done
 exit
 sudo -su wwwsvr
