@@ -6,22 +6,35 @@ pipeline {
     }
     environment {
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        VAULT_TOKEN = "${params.vaultToken}"
+        WRAPPING_TOKEN = "${params.wrappingToken}"
         PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
         BIN_DIR = "/sw_ux/bin"
+        PCI="false"
+        INSTALL_USER="wwwadm"
+        RUN_USER="wwwsvr"
         AGENT_ROOT = "/apps_ux/agents"
         S6_SERVICE_HOME = "/apps_ux/s6_services"
         HOST = setHost("${params.fluentbitHost}")
-        CD_USER = """${sh(
+        VAULT_TOKEN = """${sh(
                 returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins_isss_cdua"
-            )}"""
-        CD_PASS = """${sh(
-                returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins_isss_cdua"
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$WRAPPING_TOKEN /sw_ux/bin/vault unwrap -field=token"
             )}"""
     }
     stages {
+        stage('Get credentials') {
+            steps {
+                script {
+                    env.CD_USER = sh(
+                        returnStdout: true,
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins-isss-cdua"
+                    )
+                    env.CD_PASS = sh(
+                        returnStdout: true,
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-cdua"
+                    )
+                }
+            }
+        }
         stage('Stop fluent bit') {
             steps {
                 sh 'scripts/stop_fluentbit.sh'

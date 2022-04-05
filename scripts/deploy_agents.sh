@@ -1,8 +1,12 @@
 #!/bin/sh
 set +x
 sshpass -p $CD_PASS ssh -q $CD_USER@$HOST /bin/bash <<EOF
-# become wwwadm
-sudo -su wwwadm
+# become install_user
+if [ "$PCI" = "true" ]; then
+    sshpass -p $CD_PASS sudo -su $INSTALL_USER
+else
+    sudo -su $INSTALL_USER
+fi
 
 echo "Temp directory: $TMP_DIR"
 # create base and agent root
@@ -27,7 +31,6 @@ unzip -o $TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip -d $BIN_DIR
 
 # deploy config and exec
 cd $TMP_DIR
-echo "Working directory: \$(pwd)"
 mkdir -p /apps_data/agents/fluent-bit
 chmod 775 /apps_data/agents
 chmod 775 /apps_data/agents/fluent-bit
@@ -54,14 +57,17 @@ for agent in \${AGENTS[@]} ; do
     chmod -R a+r,a+X \$AGENT_HOME/conf
 done
 exit
-sudo -su wwwsvr
-# set temp directory
-echo "Temp directory: $TMP_DIR"
+
+# become run_user
+if [ "$PCI" = "true" ]; then
+    sshpass -p $CD_PASS sudo -su $RUN_USER
+else
+    sudo -su $RUN_USER
+fi
 # Trigger adding
 /sw_ux/s6/bin/s6-svscanctl -a $S6_SERVICE_HOME
 # deploy log rotation
 cd $TMP_DIR
-echo "Working directory: \$(pwd)"
 mkdir -p /apps_ux/logs/agents/fluent-bit
 chmod 775 /apps_ux/logs/agents
 chmod 775 /apps_ux/logs/agents/fluent-bit
@@ -73,4 +79,15 @@ for agent in \${AGENTS[@]} ; do
     cronjob="59 23 * * * \$croncmd"
     ( crontab -l | grep -v -F "\$croncmd" ; echo "\$cronjob" ) | crontab -
 done
+exit
+
+# clean up
+# become install_user
+if [ "$PCI" = "true" ]; then
+    sshpass -p $CD_PASS sudo -su $INSTALL_USER
+else
+    sudo -su $INSTALL_USER
+fi
+rm -rf $TMP_DIR
+exit
 EOF
