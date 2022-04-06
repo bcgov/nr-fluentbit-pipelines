@@ -35,9 +35,6 @@ AGENTS=\$(ls -d output/fluent-bit.*)
 for agent in \${AGENTS[@]} ; do
     AGENT=\$(basename \$agent)
     AGENT_HOME=$AGENT_ROOT/\$AGENT
-    if [ -r \$AGENT_HOME ]; then
-        mv \$AGENT_HOME $TMP_DIR/backup/\$AGENT
-    fi
     # create agent and service directories
     mkdir -p \$AGENT_HOME/{bin,conf,lib}
     chmod 775 \$AGENT_HOME
