@@ -32,22 +32,6 @@ pipeline {
                         returnStdout: true,
                         script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-cdua"
                     )
-                    ROLE_ID = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault read -field=role_id auth/vs_apps_approle/role/fluent_fluent-bit_prod/role-id"
-                    )
-                    SECRET_ID_WRAPPED = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -wrap-ttl=120s -f -field=wrapping_token auth/vs_apps_approle/role/fluent_fluent-bit_prod/secret-id"
-                    )
-                    SECRET_ID = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$SECRET_ID_WRAPPED /sw_ux/bin/vault unwrap -field=secret_id"
-                    )
-                    env.APP_TOKEN = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -force -field=token auth/vs_apps_approle/login role_id=$ROLE_ID secret_id=$SECRET_ID"
-                    )
                 }
             }
         }
