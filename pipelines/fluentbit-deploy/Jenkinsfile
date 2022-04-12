@@ -1,0 +1,199 @@
+import groovy.transform.Field
+
+pipeline {
+    agent {
+        label 'master'
+    }
+    environment {
+        PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
+        PIPELINE_ARTIFACTORY_CREDS = credentials('d7d54e7d-10c1-4466-a6d6-82ea62699416')
+        FUNBUCKS_OUTPUT = "nr-funbucks/output"
+        VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
+        WRAPPING_TOKEN = "${params.wrappingToken}"
+        FLUENTBIT_RELEASE = setFluentBitRelease("${params.fluentbitHost}")
+        BIN_DIR = "/sw_ux/bin"
+        AGENT_ROOT = "/apps_ux/agents"
+        S6_SERVICE_HOME = "/apps_ux/s6_services"
+        HOST = setHost("${params.fluentbitHost}")
+        PCI="false"
+        INSTALL_USER = "wwwadm"
+        RUN_USER = "wwwsvr"
+        VAULT_RELEASE = "1.7.1"
+        ENVCONSUL_RELEASE = "0.11.0"
+        JQ_RELEASE = "1.6"
+        TMP_DIR = "/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}"
+        VAULT_TOKEN = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$WRAPPING_TOKEN /sw_ux/bin/vault unwrap -field=token"
+            )}"""
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/feat/wrapping-token']],
+                    doGenerateSubmoduleConfigurations: false,
+                    gitTool: 'jgit',
+                    submoduleCfg: [],
+                    userRemoteConfigs: [
+                        [
+                            credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
+                            url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/fluentbit/fluentbit-deploy.git'
+                        ]
+                    ]
+                ])
+            }
+        }
+        stage('Setup funbucks') {
+            environment { 
+                HTTP_PROXY = setHttpProxy("${params.fluentbitHost}")
+                HTTPS_PROXY = setHttpProxy("${params.fluentbitHost}")
+                NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
+            }
+            steps {
+                sh '''set +x; pass=`echo -n "$PIPELINE_ARTIFACTORY_CREDS_USR:$PIPELINE_ARTIFACTORY_CREDS_PSW" | openssl base64 -A`
+echo "email=$PIPELINE_ARTIFACTORY_CREDS_USR
+always-auth=true
+strict-ssl=false
+_auth=$pass
+" > .npmrc'''
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'nr-funbucks']],
+                    gitTool: 'jgit',
+                    submoduleCfg: [],
+                    userRemoteConfigs: [
+                        [
+                            credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
+                            url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-nr-funbucks.git'
+                        ]
+                    ]
+                ])
+                sh 'cd nr-funbucks; npm ci'
+            }
+
+        }
+        stage('Build config') {
+            steps {
+                sh "nr-funbucks/bin/dev gen -m -s ${params.fluentbitHost}"
+            }
+        }
+        stage('Get credentials') {
+            steps {
+                script {
+                    env.CD_USER = sh(
+                        returnStdout: true,
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins-isss-cdua"
+                    )
+                    env.CD_PASS = sh(
+                        returnStdout: true,
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-cdua"
+                    )
+                    env.CI_USER = sh(
+                        returnStdout: true,
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins-isss-ci"
+                    )
+                    env.CI_PASS = sh(
+                            returnStdout: true,
+                            script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-ci"
+                    )                    
+                }
+            }
+        }
+        stage('Copy') {
+            steps {
+                sh 'scripts/copy_files.sh'
+            }
+        }
+        stage('Stop fluent bit') {
+            steps {
+                script {
+                    WRAPPING_TOKEN = sh(
+                        returnStdout: true,
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN vault write -field=wrapping_token sys/wrapping/wrap token=$VAULT_TOKEN"
+                    )                    
+                }
+                build job: 'FLUENTBIT/fluentbit-stop', parameters: [
+                    [$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost],
+                    [$class: 'PasswordParameterValue', name: 'wrappingToken', value: "${WRAPPING_TOKEN}"]
+                ]
+            }
+        }
+        stage('Remove previous agents') {
+            steps {
+                sh 'scripts/remove_agents.sh'
+            }
+        }
+        stage('Deploy agents') {
+            environment { 
+                HTTP_PROXY = setHttpProxy("${params.fluentbitHost}")
+                HTTPS_PROXY = setHttpProxy("${params.fluentbitHost}")
+                NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
+            }
+            steps {
+                sh 'scripts/deploy_agents.sh'
+            }
+        }
+        stage('Start fluent bit') {
+            steps {
+                script {
+                    WRAPPING_TOKEN = sh(
+                        returnStdout: true,
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN vault write -field=wrapping_token sys/wrapping/wrap token=$VAULT_TOKEN"
+                    )                    
+                }
+                build job: 'FLUENTBIT/fluentbit-start', parameters: [
+                    [$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost],
+                    [$class: 'PasswordParameterValue', name: 'wrappingToken', value: "${WRAPPING_TOKEN}"]
+                ]
+            }
+        }
+    }
+}
+
+@Field
+def checkoutDone = false
+// Helper Functions
+def checkoutConfig(fluentbitHost) {
+    if (checkoutDone && fileExists("fb/config/server/${fluentbitHost}.json")) {
+        return
+    }
+    checkoutDone = true
+    dir("fb") {
+        deleteDir()
+    }
+    checkout([
+        $class: 'GitSCM',
+        branches: [[name: '*/main']],
+        doGenerateSubmoduleConfigurations: false,
+        extensions: [
+            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'fb'],
+            [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[[$class:'SparseCheckoutPath', path: "config/server/${fluentbitHost}.json"]]]
+        ],
+        submoduleCfg: [],
+        userRemoteConfigs: [
+            [
+                credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
+                url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-nr-funbucks.git'
+            ]
+        ]
+    ])
+}
+def setFluentBitRelease(fluentbitHost) {
+    checkoutConfig(fluentbitHost)
+    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
+    return props.fluentBitRelease
+}
+def setHost(fluentbitHost) {
+    checkoutConfig(fluentbitHost)
+    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
+    return props.address
+}
+def setHttpProxy(fluentbitHost) {
+    checkoutConfig(fluentbitHost)
+    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
+    return props.proxy
+}

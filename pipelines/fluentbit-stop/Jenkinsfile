@@ -1,0 +1,78 @@
+import groovy.transform.Field
+
+pipeline {
+    agent {
+        label 'master'
+    }
+    environment {
+        VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
+        WRAPPING_TOKEN = "${params.wrappingToken}"
+        PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
+        BIN_DIR = "/sw_ux/bin"
+        PCI="false"
+        INSTALL_USER="wwwadm"
+        RUN_USER="wwwsvr"
+        AGENT_ROOT = "/apps_ux/agents"
+        S6_SERVICE_HOME = "/apps_ux/s6_services"
+        HOST = setHost("${params.fluentbitHost}")
+        VAULT_TOKEN = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$WRAPPING_TOKEN /sw_ux/bin/vault unwrap -field=token"
+            )}"""
+    }
+    stages {
+        stage('Get credentials') {
+            steps {
+                script {
+                    env.CD_USER = sh(
+                        returnStdout: true,
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins-isss-cdua"
+                    )
+                    env.CD_PASS = sh(
+                        returnStdout: true,
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-cdua"
+                    )
+                }
+            }
+        }
+        stage('Stop fluent bit') {
+            steps {
+                sh 'scripts/stop_fluentbit.sh'
+            }
+        }
+    }
+}
+
+@Field
+def checkoutDone = false
+// Helper Functions
+def checkoutConfig(fluentbitHost) {
+    if (checkoutDone && fileExists("fb/config/server/${fluentbitHost}.json")) {
+        return
+    }
+    checkoutDone = true
+    dir("fb") {
+        deleteDir()
+    }
+    checkout([
+        $class: 'GitSCM',
+        branches: [[name: '*/main']],
+        doGenerateSubmoduleConfigurations: false,
+        extensions: [
+            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'fb'],
+            [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[[$class:'SparseCheckoutPath', path: "config/server/${fluentbitHost}.json"]]]
+        ],
+        submoduleCfg: [],
+        userRemoteConfigs: [
+            [
+                credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
+                url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-nr-funbucks.git'
+            ]
+        ]
+    ])
+}
+def setHost(fluentbitHost) {
+    checkoutConfig(fluentbitHost)
+    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
+    return props.address
+}

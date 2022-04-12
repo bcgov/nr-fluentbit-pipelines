@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# https://stackoverflow.com/a/246128
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$SCRIPT_DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+# SCRIPT_DIR is the absolute folder path where the script is located
+SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+export FLUENT_HOME="$( dirname "$SCRIPT_DIR" )"
+export FLUENT_CONF_HOME="${FLUENT_HOME}/conf"
+export LD_LIBRARY_PATH="${FLUENT_HOME}/lib"
+export FLUENT_VERSION=$("${FLUENT_HOME}"/bin/fluent-bit --version | grep 'Fluent Bit v' | awk '{print$3}' | sed 's/[^0-9\.]//g')
+export HOST_OS_TYPE='linux'
+export HOST_OS_FAMILY=$(cat /etc/os-release | grep -e '^ID=' |  cut -d'=' -f2 | xargs)
+export HOST_OS_KERNEL=$(uname -r)
+export HOST_OS_NAME="$(cat /etc/os-release | grep -e '^NAME=' |  cut -d'=' -f2 | xargs)"
+export HOST_OS_FULL=$(cat /etc/os-release | grep -e '^PRETTY_NAME=' |  cut -d'=' -f2 | xargs)
+export HOST_OS_VERSION=$(cat /etc/os-release | grep -e '^VERSION_ID=' |  cut -d'=' -f2 | xargs)
+export HOST_ID=$(hostname -f)
+export HOST_HOSTNAME=$(hostname -s)
+export HOST_NAME=$(domainname -A | tr " " "\n" | sort | uniq | tr '\n' ' ' | xargs)
+export HOST_DOMAIN=$(printf "$HOST_NAME" | tr " " "\n" | awk -F. '{$1="";OFS="." ; print $0}' | sed 's/^.//' | sort | uniq | tr '\n' ' ' | xargs)
+
+export HOST_ARCH=$(uname -m)
+export HOST_IP=$(ip addr | grep 'inet' | tr -s " " | cut -d' ' -f3 | cut -d'/' -f1 | grep -v '127.0.0.1')
+export HOST_MAC=$(ip link | grep 'link/ether' | tr -s " " | cut -d' ' -f3)
+
+source "${SCRIPT_DIR}/.env"
+
+# run fluent bit
+exec /sw_ux/bin/envconsul "-config=${FLUENT_HOME}/conf/fluent-bit.hcl"
