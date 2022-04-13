@@ -22,7 +22,7 @@ for agent in \${AGENTS[@]} ; do
         VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=\$PREVIOUS_TOKEN /sw_ux/bin/vault token revoke -self
     fi
     # generate and deploy new app token to .env file    
-    SECRET_ID=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -f -field=secret-id auth/vs_apps_approle/role/fluent_fluent-bit_prod/secret-id)
+    SECRET_ID=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -f -field=secret_id auth/vs_apps_approle/role/fluent_fluent-bit_prod/secret-id)
     APP_TOKEN=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -force -field=token auth/vs_apps_approle/login role_id=\$ROLE_ID secret_id=\$SECRET_ID)
     sed 's/VAULT_TOKEN=.*/'VAULT_TOKEN=\""\$APP_TOKEN"\"'/g' \$AGENT_HOME/bin/.env.template > \$AGENT_HOME/bin/.env
     chmod 700 \$AGENT_HOME/bin/.env
