@@ -3,7 +3,7 @@ set +x
 sshpass -p $CD_PASS ssh -q $CD_USER@$HOST /bin/bash <<EOF
 # become install_user
 if [ "$PCI" = "true" ]; then
-    sshpass -p $CD_PASS sudo -su $INSTALL_USER
+    /sw_ux/bin/sshpass -p $CD_PASS sudo -su $INSTALL_USER
 else
     sudo -su $INSTALL_USER
 fi
@@ -60,7 +60,7 @@ exit
 
 # become run_user
 if [ "$PCI" = "true" ]; then
-    sshpass -p $CD_PASS sudo -su $RUN_USER
+    /sw_ux/bin/sshpass -p $CD_PASS sudo -su $RUN_USER
 else
     sudo -su $RUN_USER
 fi
@@ -84,7 +84,7 @@ exit
 # clean up
 # become install_user
 if [ "$PCI" = "true" ]; then
-    sshpass -p $CD_PASS sudo -su $INSTALL_USER
+    /sw_ux/bin/sshpass -p $CD_PASS sudo -su $INSTALL_USER
 else
     sudo -su $INSTALL_USER
 fi

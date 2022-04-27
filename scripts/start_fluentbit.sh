@@ -3,7 +3,7 @@ set +x
 sshpass -p $CD_PASS ssh -q $CD_USER@$HOST /bin/bash <<EOF
 # become run_user
 if [ "$PCI" = "true" ]; then
-    sshpass -p $CD_PASS sudo -su $RUN_USER
+    /sw_ux/bin/sshpass -p $CD_PASS sudo -su $RUN_USER
 else
     sudo -su $RUN_USER
 fi
@@ -30,6 +30,6 @@ for agent in \${AGENTS[@]} ; do
     if [ -r $S6_SERVICE_HOME/\$AGENT/run ]; then
         /sw_ux/s6/bin/s6-svc -u $S6_SERVICE_HOME/\$AGENT/
     fi
-    sleep 1
+    sleep 5
 done
 EOF
