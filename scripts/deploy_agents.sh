@@ -65,7 +65,7 @@ else
     sudo -su $RUN_USER
 fi
 # Trigger adding
-/sw_ux/s6/bin/s6-svscanctl -a $S6_SERVICE_HOME
+/sw_ux/s6/bin/s6-svscanctl -an $S6_SERVICE_HOME
 # deploy log rotation
 cd $TMP_DIR
 mkdir -p /apps_ux/logs/agents/fluent-bit
