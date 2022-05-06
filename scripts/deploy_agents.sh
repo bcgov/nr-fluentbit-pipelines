@@ -16,7 +16,7 @@ chmod 755 $BIN_DIR
 chmod 775 $AGENT_ROOT
 
 # download dependencies
-if [ -z $HTTP_PROXY ]; then
+if [ -z "$HTTP_PROXY" ]; then
     /bin/curl -sSL "https://releases.hashicorp.com/vault/${VAULT_RELEASE}/vault_${VAULT_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/vault_${VAULT_RELEASE}_linux_amd64.zip"
     /bin/curl -sSL "https://releases.hashicorp.com/envconsul/${ENVCONSUL_RELEASE}/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip"
     /bin/curl -sSL "https://github.com/stedolan/jq/releases/download/jq-${JQ_RELEASE}/jq-linux64" -o $BIN_DIR/jq
