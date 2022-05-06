@@ -129,8 +129,10 @@ _auth=$pass
         }
         stage('Deploy agents') {
             environment { 
-                HTTP_PROXY = setHttpProxy("${params.fluentbitHost}")
-                HTTPS_PROXY = setHttpProxy("${params.fluentbitHost}")
+                HTTP_PROXY_URL = setHttpProxy("${params.fluentbitHost}")
+                LOGS_PROXY_DISABLED = setLogsProxyDisabled("${params.fluentbitHost}")
+                HTTP_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
+                HTTPS_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
                 NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
             }
             steps {
@@ -196,4 +198,9 @@ def setHttpProxy(fluentbitHost) {
     checkoutConfig(fluentbitHost)
     def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
     return props.proxy
+}
+def setLogsProxyDisabled(fluentbitHost) {
+    checkoutConfig(fluentbitHost)
+    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
+    return props.logsProxyDisabled
 }
