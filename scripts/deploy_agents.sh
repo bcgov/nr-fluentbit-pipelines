@@ -16,9 +16,15 @@ chmod 755 $BIN_DIR
 chmod 775 $AGENT_ROOT
 
 # download dependencies
-/bin/curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/vault/${VAULT_RELEASE}/vault_${VAULT_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/vault_${VAULT_RELEASE}_linux_amd64.zip"
-/bin/curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/envconsul/${ENVCONSUL_RELEASE}/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip"
-/bin/curl -x $HTTP_PROXY -sSL "https://github.com/stedolan/jq/releases/download/jq-${JQ_RELEASE}/jq-linux64" -o $BIN_DIR/jq
+if [ -z $HTTP_PROXY ]; then
+    /bin/curl -sSL "https://releases.hashicorp.com/vault/${VAULT_RELEASE}/vault_${VAULT_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/vault_${VAULT_RELEASE}_linux_amd64.zip"
+    /bin/curl -sSL "https://releases.hashicorp.com/envconsul/${ENVCONSUL_RELEASE}/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip"
+    /bin/curl -sSL "https://github.com/stedolan/jq/releases/download/jq-${JQ_RELEASE}/jq-linux64" -o $BIN_DIR/jq
+else
+    /bin/curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/vault/${VAULT_RELEASE}/vault_${VAULT_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/vault_${VAULT_RELEASE}_linux_amd64.zip"
+    /bin/curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/envconsul/${ENVCONSUL_RELEASE}/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip"
+    /bin/curl -x $HTTP_PROXY -sSL "https://github.com/stedolan/jq/releases/download/jq-${JQ_RELEASE}/jq-linux64" -o $BIN_DIR/jq
+fi
 /bin/curl -u $CI_USER:$CI_PASS -sSL "http://bwa.nrs.gov.bc.ca/int/artifactory/ext-binaries-local/fluent/fluent-bit/${FLUENTBIT_RELEASE}/fluent-bit.tar.gz" -o $TMP_DIR/bin/fluent-bit.tar.gz
 # set jq as executable
 chmod 755 $BIN_DIR/jq
