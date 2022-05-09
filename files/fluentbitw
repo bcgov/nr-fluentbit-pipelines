@@ -31,5 +31,15 @@ export HOST_MAC=$(ip link | grep 'link/ether' | tr -s " " | cut -d' ' -f3)
 
 source "${SCRIPT_DIR}/.env"
 
-# run fluent bit
-exec /sw_ux/bin/envconsul "-config=${FLUENT_HOME}/conf/fluent-bit.hcl"
+# check token
+# if the token is expired, bring the service down
+# if the token is valid, run the agent
+TOKEN=$(cat "${SCRIPT_DIR}/.env" | grep VAULT_TOKEN | awk -F '"' '{print $2}')
+TOKEN_ID=$(VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$TOKEN /sw_ux/bin/vault token lookup -format json | /sw_ux/bin/jq -r '.data.id')
+
+if [ -z "$TOKEN_ID" ]; then
+  /sw_ux/s6/bin/s6-svc -d "$S6_SERVICE_DIR"
+else
+  # run fluent bit
+  exec /sw_ux/bin/envconsul "-config=${FLUENT_HOME}/conf/fluent-bit.hcl"
+fi
