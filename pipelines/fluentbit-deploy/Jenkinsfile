@@ -9,7 +9,12 @@ pipeline {
         PIPELINE_ARTIFACTORY_CREDS = credentials('d7d54e7d-10c1-4466-a6d6-82ea62699416')
         FUNBUCKS_OUTPUT = "nr-funbucks/output"
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        WRAPPING_TOKEN = "${params.wrappingToken}"
+        FLUENTBIT_DEPLOYER_TOKEN = credentials('fluentbit-deployer')
+        WRAPPING_TOKEN = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault token create \
+                    -ttl=300 -explicit-max-ttl=300 -renewable=false -wrap-ttl=300 -field=wrapping_token"
+            )}"""
         FLUENTBIT_RELEASE = setFluentBitRelease("${params.fluentbitHost}")
         BIN_DIR = "/sw_ux/bin"
         AGENT_ROOT = "/apps_ux/agents"
@@ -97,8 +102,8 @@ _auth=$pass
                         script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins-isss-ci"
                     )
                     env.CI_PASS = sh(
-                            returnStdout: true,
-                            script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-ci"
+                        returnStdout: true,
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-ci"
                     )                    
                 }
             }
