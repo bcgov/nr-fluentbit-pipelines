@@ -20,10 +20,6 @@ pipeline {
         AGENT_ROOT = "/apps_ux/agents"
         S6_SERVICE_HOME = "/apps_ux/s6_services"
         HOST = setHost("${params.fluentbitHost}")
-        VAULT_TOKEN = """${sh(
-                returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$WRAPPING_TOKEN /sw_ux/bin/vault unwrap -field=token"
-            )}"""
     }
     stages {
         stage('Get credentials') {
