@@ -6,7 +6,12 @@ pipeline {
     }
     environment {
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        WRAPPING_TOKEN = "${params.wrappingToken}"
+        FLUENTBIT_DEPLOYER_TOKEN = credentials('fluentbit-deployer')
+        VAULT_TOKEN = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault token create \
+                    -ttl=60 -explicit-max-ttl=60 -renewable=false -field=token"
+            )}"""
         PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
         BIN_DIR = "/sw_ux/bin"
         PCI="false"
@@ -15,10 +20,6 @@ pipeline {
         AGENT_ROOT = "/apps_ux/agents"
         S6_SERVICE_HOME = "/apps_ux/s6_services"
         HOST = setHost("${params.fluentbitHost}")
-        VAULT_TOKEN = """${sh(
-                returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$WRAPPING_TOKEN /sw_ux/bin/vault unwrap -field=token"
-            )}"""
     }
     stages {
         stage('Get credentials') {

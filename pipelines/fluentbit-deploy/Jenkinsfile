@@ -115,15 +115,8 @@ _auth=$pass
         }
         stage('Stop fluent bit') {
             steps {
-                script {
-                    WRAPPING_TOKEN = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN vault write -field=wrapping_token sys/wrapping/wrap token=$VAULT_TOKEN"
-                    )                    
-                }
                 build job: 'FLUENTBIT/fluentbit-stop', parameters: [
-                    [$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost],
-                    [$class: 'PasswordParameterValue', name: 'wrappingToken', value: "${WRAPPING_TOKEN}"]
+                    [$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost]
                 ]
             }
         }
@@ -146,15 +139,8 @@ _auth=$pass
         }
         stage('Start fluent bit') {
             steps {
-                script {
-                    WRAPPING_TOKEN = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN vault write -field=wrapping_token sys/wrapping/wrap token=$VAULT_TOKEN"
-                    )                    
-                }
                 build job: 'FLUENTBIT/fluentbit-start', parameters: [
-                    [$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost],
-                    [$class: 'PasswordParameterValue', name: 'wrappingToken', value: "${WRAPPING_TOKEN}"]
+                    [$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost]
                 ]
             }
         }

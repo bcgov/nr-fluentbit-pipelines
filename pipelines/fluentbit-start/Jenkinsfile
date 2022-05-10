@@ -6,7 +6,12 @@ pipeline {
     }
     environment {
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        WRAPPING_TOKEN = "${params.wrappingToken}"
+        FLUENTBIT_DEPLOYER_TOKEN = credentials('fluentbit-deployer')
+        VAULT_TOKEN = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault token create \
+                    -ttl=60 -explicit-max-ttl=60 -renewable=false -field=token"
+            )}"""
         PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
         BIN_DIR = "/sw_ux/bin"
         PCI="false"
