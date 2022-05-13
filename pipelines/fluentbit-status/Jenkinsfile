@@ -1,0 +1,80 @@
+import groovy.transform.Field
+
+pipeline {
+    agent {
+        label 'master'
+    }
+    environment {
+        PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
+        VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
+        FLUENTBIT_DEPLOYER_TOKEN = credentials('fluentbit-deployer')
+        WRAPPING_TOKEN = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault token create \
+                    -ttl=300 -explicit-max-ttl=300 -renewable=false -wrap-ttl=300 -field=wrapping_token"
+            )}"""
+        AGENT_ROOT = "/apps_ux/agents"
+        VAULT_TOKEN = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$WRAPPING_TOKEN /sw_ux/bin/vault unwrap -field=token"
+            )}"""
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/feat/status']],
+                    doGenerateSubmoduleConfigurations: false,
+                    gitTool: 'jgit',
+                    submoduleCfg: [],
+                    userRemoteConfigs: [
+                        [
+                            credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
+                            url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/fluentbit/fluentbit-deploy.git'
+                        ]
+                    ]
+                ])
+            }
+        }
+        stage('Config') {
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [
+                        [$class: 'RelativeTargetDirectory', relativeTargetDir: 'fb'],
+                        [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[[$class:'SparseCheckoutPath', path: "config/server"], [$class:'SparseCheckoutPath', path: "config/base.json"]]]
+                    ],
+                    submoduleCfg: [],
+                    userRemoteConfigs: [
+                        [
+                            credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
+                            url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-nr-funbucks.git'
+                        ]
+                    ]
+                ])
+            }
+        }
+        stage('Get credentials') {
+            steps {
+                script {
+                    env.CD_USER = sh(
+                        returnStdout: true,
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins-isss-cdua"
+                    )
+                    env.CD_PASS = sh(
+                        returnStdout: true,
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-cdua"
+                    )
+                }
+            }
+        }
+        stage('Status') {
+            steps {
+                sh 'scripts/fluentbit_status.sh'
+            }
+        }
+    }
+}
