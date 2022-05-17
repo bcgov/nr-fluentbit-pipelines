@@ -24,7 +24,7 @@ pipeline {
             steps {
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '*/feat/status']],
+                    branches: [[name: '*/main']],
                     doGenerateSubmoduleConfigurations: false,
                     gitTool: 'jgit',
                     submoduleCfg: [],
