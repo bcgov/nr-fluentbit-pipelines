@@ -164,23 +164,7 @@ def checkoutConfig(fluentbitHost) {
         doGenerateSubmoduleConfigurations: false,
         extensions: [
             [$class: 'RelativeTargetDirectory', relativeTargetDir: 'fb'],
-            [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[[$class:'SparseCheckoutPath', path: "config/server/${fluentbitHost}.json"]]]
-        ],
-        submoduleCfg: [],
-        userRemoteConfigs: [
-            [
-                credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
-                url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-nr-funbucks.git'
-            ]
-        ]
-    ])
-    checkout([
-        $class: 'GitSCM',
-        branches: [[name: '*/main']],
-        doGenerateSubmoduleConfigurations: false,
-        extensions: [
-            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'fb'],
-            [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[[$class:'SparseCheckoutPath', path: "config/base.json"]]]
+            [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[[$class:'SparseCheckoutPath', path: "config/server/${fluentbitHost}.json"], [$class:'SparseCheckoutPath', path: "config/base.json"]]]
         ],
         submoduleCfg: [],
         userRemoteConfigs: [
