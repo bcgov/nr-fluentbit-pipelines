@@ -51,7 +51,7 @@ pipeline {
             }
         }
         stage('Setup funbucks') {
-            environment { 
+            environment {
                 HTTP_PROXY = setHttpProxy("${params.fluentbitHost}")
                 HTTPS_PROXY = setHttpProxy("${params.fluentbitHost}")
                 NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
@@ -104,7 +104,7 @@ _auth=$pass
                     env.CI_PASS = sh(
                         returnStdout: true,
                         script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-ci"
-                    )                    
+                    )
                 }
             }
         }
@@ -126,7 +126,7 @@ _auth=$pass
             }
         }
         stage('Deploy agents') {
-            environment { 
+            environment {
                 HTTP_PROXY_URL = setHttpProxy("${params.fluentbitHost}")
                 LOGS_PROXY_DISABLED = setLogsProxyDisabled("${params.fluentbitHost}")
                 HTTP_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
@@ -174,11 +174,28 @@ def checkoutConfig(fluentbitHost) {
             ]
         ]
     ])
+    checkout([
+        $class: 'GitSCM',
+        branches: [[name: '*/main']],
+        doGenerateSubmoduleConfigurations: false,
+        extensions: [
+            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'fb'],
+            [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[[$class:'SparseCheckoutPath', path: "config/base.json"]]]
+        ],
+        submoduleCfg: [],
+        userRemoteConfigs: [
+            [
+                credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
+                url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-nr-funbucks.git'
+            ]
+        ]
+    ])
 }
 def setFluentBitRelease(fluentbitHost) {
     checkoutConfig(fluentbitHost)
+    def baseProps = readJSON file: "fb/config/base.json"
     def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
-    return props.fluentBitRelease
+    return props.fluentBitRelease ? props.fluentBitRelease : baseProps.fluentBitRelease
 }
 def setHost(fluentbitHost) {
     checkoutConfig(fluentbitHost)
