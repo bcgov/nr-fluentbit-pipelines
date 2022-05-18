@@ -61,6 +61,7 @@ pipeline {
 echo "email=$PIPELINE_ARTIFACTORY_CREDS_USR
 always-auth=true
 strict-ssl=false
+registry=http://bwa.nrs.gov.bc.ca/int/artifactory/api/npm/nrs-virtual-npm/
 _auth=$pass
 " > .npmrc'''
                 checkout([
