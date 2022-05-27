@@ -15,8 +15,7 @@ fi
 ROLE_ID=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault read -field=role_id auth/vs_apps_approle/role/fluent_fluent-bit_prod/role-id)
 
 # extract interface name
-
-INTERFACE_NAME=\$(ip addr | awk '
+METRIC_HOST_NETWORK_INTERFACE_NAME=\$(ip addr | awk '
 /^[0-9]+:/ {
   sub(/:/,"",\$2); iface=\$2 }
 /^[[:space:]]*inet / {
