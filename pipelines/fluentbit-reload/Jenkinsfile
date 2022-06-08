@@ -20,7 +20,7 @@ pipeline {
         S6_SERVICE_HOME = "/apps_ux/s6_services"
         FLUENTBIT_DB = "/apps_data/agents/fluent-bit/fluent-bit-logs.db"
         HOST = setHost("${params.fluentbitHost}")
-        TAIL_FILES_LIKE = setHost("${params.fluentbitFilesLike}")
+        TAIL_FILES_LIKE = "${params.fluentbitFilesLike}"
     }
     stages {
         stage('Get credentials') {
