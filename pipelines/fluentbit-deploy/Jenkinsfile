@@ -26,6 +26,7 @@ pipeline {
         VAULT_RELEASE = "1.7.1"
         ENVCONSUL_RELEASE = "0.11.0"
         JQ_RELEASE = "1.6"
+        SQLITE_RELEASE = "3.38.5"
         TMP_DIR = "/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}"
         VAULT_TOKEN = """${sh(
                 returnStdout: true,
