@@ -1,0 +1,44 @@
+pipeline {
+    agent {
+        label 'master'
+    }
+    environment {
+        PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
+        PIPELINE_ARTIFACTORY_CREDS = credentials('d7d54e7d-10c1-4466-a6d6-82ea62699416')
+    }
+    stages {
+        stage('Download Workflow CLI') {
+            steps {
+                sh 'scripts/automation_setup.sh'
+            }
+        }
+        stage('Read Automation Queue') {
+            steps {
+                script {
+                    def jsonSlurper = new JsonSlurper()
+                    // Read queue
+                    def automationOutput = sh (
+                        script: './bin/run automation-message',
+                        returnStdout: true
+                    ).trim()
+                    def messageArr = jsonSlurper.parseText(automationOutput)
+                    def serverMap = [:]
+                    messageArr.each {
+                        if (serverMap[it.server]) {
+                          continue
+                        }
+                        def job = hudson.model.Hudson.instance.getJob("FLUENTBIT/fluentbit-start")
+                        def params = []
+                        params += new StringParameterValue('fluentbitHost', it.server)
+                        def paramsAction = new ParametersAction(params)
+                        def cause = new hudson.model.Cause.UpstreamCause(build)
+                        def causeAction = new hudson.model.CauseAction(cause)
+
+                        hudson.model.Hudson.instance.queue.schedule(job, 0, causeAction, paramsAction)
+                        serverMap[it.server] = true;
+                    }
+                }
+            }
+        }
+    }
+}
