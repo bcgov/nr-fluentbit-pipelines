@@ -23,6 +23,24 @@ pipeline {
                 returnStdout: true,
                 script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$WRAPPING_TOKEN /sw_ux/bin/vault unwrap -field=token"
             )}"""
+        WRAPPING_TOKEN = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault write -wrap-ttl=120s \
+                    -f -field=wrapping_token auth/vs_apps_approle/role/jenkins_aws-automation_prod/secret-id"
+            )}"""
+        ROLE_ID = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault read -field=role_id auth/vs_apps_approle/role/jenkins_aws-automation_prod/role-id"
+            )}"""
+        SECRET_ID = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault unwrap -field=secret_id"
+            )}"""
+        APP_TOKEN = """${sh(
+                returnStdout: true,
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault write -force -field=token auth/vs_apps_approle/login role_id=$ROLE_ID secret_id=$SECRET_ID
+            )}"""
+
         AWS_REGION = "ca-central-1"
         AWS_DEFAULT_REGION = "ca-central-1"
         OS_URL = "apm.io.nrs.gov.bc.ca"
@@ -54,19 +72,19 @@ pipeline {
                 script {
                     env.AWS_ACCOUNT_NUMBER = sh(
                         returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=aws_account_number apps/prod/jenkins/aws-automation"
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault kv get -field=aws_account_number apps/prod/jenkins/aws-automation"
                     )
                     env.AWS_ACCESS_KEY_ID = sh(
                         returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=aws_access_key apps/prod/jenkins/aws-automation"
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault kv get -field=aws_access_key apps/prod/jenkins/aws-automation"
                     )
                     env.AWS_SECRET_ACCESS_KEY = sh(
                         returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=aws_secret_access_key apps/prod/jenkins/aws-automation"
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault kv get -field=aws_secret_access_key apps/prod/jenkins/aws-automation"
                     )
                     env.AWS_ASSUME_ROLE = sh(
                         returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=aws_assume_role apps/prod/jenkins/aws-automation"
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault kv get -field=aws_assume_role apps/prod/jenkins/aws-automation"
                     )
                 }
             }

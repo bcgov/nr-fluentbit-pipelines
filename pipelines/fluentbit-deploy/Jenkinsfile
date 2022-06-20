@@ -13,7 +13,7 @@ pipeline {
         WRAPPING_TOKEN = """${sh(
                 returnStdout: true,
                 script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault token create \
-                    -ttl=300 -explicit-max-ttl=300 -renewable=false -wrap-ttl=300 -field=wrapping_token"
+                    -ttl=300 -explicit-max-ttl=300 -renewable=false -wrap-ttl=300 -field=wrapping_token -policy=system/isss-ci-read -policy=system/isss-cdua-read"
             )}"""
         FLUENTBIT_RELEASE = setFluentBitRelease("${params.fluentbitHost}")
         BIN_DIR = "/sw_ux/bin"
