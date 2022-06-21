@@ -36,8 +36,8 @@ pipeline {
         AWS_DEFAULT_REGION = "ca-central-1"
         OS_URL = "apm.io.nrs.gov.bc.ca"
         OS_DOMAIN = "nress-prod"
-        HTTP_PROXY = setHttpProxy("http://forwardproxy.nrs.bcgov:23128")
-        HTTPS_PROXY = setHttpProxy("http://forwardproxy.nrs.bcgov:23128")
+        HTTP_PROXY = "http://forwardproxy.nrs.bcgov:23128"
+        HTTPS_PROXY = "http://forwardproxy.nrs.bcgov:23128"
         NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
     }
     stages {
