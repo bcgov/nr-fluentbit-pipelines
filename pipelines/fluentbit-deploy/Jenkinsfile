@@ -26,7 +26,7 @@ pipeline {
         VAULT_TOKEN = """${sh(
                 returnStdout: true,
                 script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault token create \
-                    -ttl=60 -explicit-max-ttl=60 -renewable=false -field=token -policy=system/isss-ci-read -policy=system/isss-cdua-read"
+                    -ttl=300 -explicit-max-ttl=300 -renewable=false -field=token -policy=system/isss-ci-read -policy=system/isss-cdua-read"
             )}"""
     }
     stages {
