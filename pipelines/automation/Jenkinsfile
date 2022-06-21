@@ -90,7 +90,7 @@ pipeline {
                 script {
                     // Read queue
                     def automationOutput = sh (
-                        script: './bin/run automation-message',
+                        script: './workflow/bin/run automation-message',
                         returnStdout: true
                     )
                     .substring(17)
