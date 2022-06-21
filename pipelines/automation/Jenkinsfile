@@ -14,19 +14,10 @@ pipeline {
         PIPELINE_ARTIFACTORY_CREDS = credentials('d7d54e7d-10c1-4466-a6d6-82ea62699416')
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
         FLUENTBIT_DEPLOYER_TOKEN = credentials('fluentbit-deployer')
-        WRAPPING_TOKEN = """${sh(
-                returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault token create \
-                    -ttl=300 -explicit-max-ttl=300 -renewable=false -wrap-ttl=300 -field=wrapping_token"
-            )}"""
         VAULT_TOKEN = """${sh(
                 returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$WRAPPING_TOKEN /sw_ux/bin/vault unwrap -field=token"
-            )}"""
-        WRAPPING_TOKEN = """${sh(
-                returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault write -wrap-ttl=120s \
-                    -f -field=wrapping_token auth/vs_apps_approle/role/jenkins_aws-automation_prod/secret-id"
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault token create \
+                    -ttl=60 -explicit-max-ttl=60 -renewable=false -field=token -policy=apps/jenkins/aws-automation/prod-auth"
             )}"""
         ROLE_ID = """${sh(
                 returnStdout: true,
@@ -34,11 +25,11 @@ pipeline {
             )}"""
         SECRET_ID = """${sh(
                 returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault unwrap -field=secret_id"
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -force -field=secret_id auth/vs_apps_approle/role/jenkins_aws-automation_prod/secret-id"
             )}"""
         APP_TOKEN = """${sh(
                 returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault write -force -field=token auth/vs_apps_approle/login role_id=$ROLE_ID secret_id=$SECRET_ID
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -force -field=token auth/vs_apps_approle/login role_id=$ROLE_ID secret_id=$SECRET_ID
             )}"""
 
         AWS_REGION = "ca-central-1"
