@@ -34,8 +34,7 @@ for agent in \${AGENTS[@]} ; do
         VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=\$PREVIOUS_TOKEN /sw_ux/bin/vault token revoke -self
     fi
     # generate and deploy new app token to .env file
-    WRAPPING_TOKEN=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -wrap-ttl=120s -f -field=wrapping_token auth/vs_apps_approle/role/fluent_fluent-bit_prod/secret-id)
-    SECRET_ID=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=\$WRAPPING_TOKEN /sw_ux/bin/vault unwrap -field=secret_id)
+    SECRET_ID=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -force -field=secret_id auth/vs_apps_approle/role/fluent_fluent-bit_prod/secret-id)
     APP_TOKEN=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -force -field=token auth/vs_apps_approle/login role_id=\$ROLE_ID secret_id=\$SECRET_ID)
     sed 's/VAULT_TOKEN=.*/'VAULT_TOKEN=\""\$APP_TOKEN"\"'/g;s/METRIC_HOST_NETWORK_INTERFACE_NAME=.*/'METRIC_HOST_NETWORK_INTERFACE_NAME=\""\$METRIC_HOST_NETWORK_INTERFACE_NAME"\"'/g' \$AGENT_HOME/bin/.env.template > \$AGENT_HOME/bin/.env
     chmod 700 \$AGENT_HOME/bin/.env

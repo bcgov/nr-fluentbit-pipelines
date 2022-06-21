@@ -8,15 +8,11 @@ pipeline {
         PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
         FLUENTBIT_DEPLOYER_TOKEN = credentials('fluentbit-deployer')
-        WRAPPING_TOKEN = """${sh(
-                returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault token create \
-                    -ttl=300 -explicit-max-ttl=300 -renewable=false -wrap-ttl=300 -field=wrapping_token"
-            )}"""
         AGENT_ROOT = "/apps_ux/agents"
         VAULT_TOKEN = """${sh(
                 returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$WRAPPING_TOKEN /sw_ux/bin/vault unwrap -field=token"
+                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault token create \
+                    -ttl=300 -explicit-max-ttl=300 -renewable=false -field=token -policy=system/isss-cdua-read"
             )}"""
     }
     stages {
