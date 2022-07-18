@@ -31,6 +31,9 @@ export HOST_MAC=$(ip link | grep 'link/ether' | tr -s " " | cut -d' ' -f3)
 
 source "${SCRIPT_DIR}/.env"
 
+# Max out open file limit
+ulimit -n $(ulimit -Hn)
+
 # check token
 # if the token is expired, bring the service down
 # if the token is valid, run the agent
