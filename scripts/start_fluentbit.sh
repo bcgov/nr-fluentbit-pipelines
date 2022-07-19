@@ -39,7 +39,7 @@ for agent in \${AGENTS[@]} ; do
     sed 's/VAULT_TOKEN=.*/'VAULT_TOKEN=\""\$APP_TOKEN"\"'/g;s/METRIC_HOST_NETWORK_INTERFACE_NAME=.*/'METRIC_HOST_NETWORK_INTERFACE_NAME=\""\$METRIC_HOST_NETWORK_INTERFACE_NAME"\"'/g' \$AGENT_HOME/bin/.env.template > \$AGENT_HOME/bin/.env
     chmod 700 \$AGENT_HOME/bin/.env
     if [ -r $S6_SERVICE_HOME/\$AGENT/run ]; then
-        /sw_ux/s6/bin/s6-svc -u $S6_SERVICE_HOME/\$AGENT/
+        /sw_ux/s6/bin/s6-svc -o $S6_SERVICE_HOME/\$AGENT/
     fi
     sleep 5
 done
