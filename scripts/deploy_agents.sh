@@ -55,6 +55,7 @@ for agent in \${AGENTS[@]} ; do
     # Copy files
     cp $TMP_DIR/bin/fluent-bit \$AGENT_HOME/bin
     cp $TMP_DIR/bin/lib* \$AGENT_HOME/lib
+    chmod 775 \$AGENT_HOME/lib/*
     cp -R $TMP_DIR/output/\$AGENT/* \$AGENT_HOME/conf
     sed -e "s,\\\$HTTP_PROXY,$HTTP_PROXY,g" -e "s,{{ apm_agent_home }},\$AGENT_HOME,g" $TMP_DIR/files/fluent-bit.hcl > \$AGENT_HOME/conf/fluent-bit.hcl
     cp $TMP_DIR/files/fluentbitw \$AGENT_HOME/bin
