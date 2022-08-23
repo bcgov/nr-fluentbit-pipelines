@@ -24,7 +24,7 @@ if [ "\${#AGENTS[@]}" -gt 0 ]; then
         AGENT=\$(basename \$agent)
         AGENT_HOME=$AGENT_ROOT/\$AGENT
         if [ -r $S6_SERVICE_HOME/\$AGENT/run ]; then
-            /sw_ux/s6/bin/s6-svc -u $S6_SERVICE_HOME/\$AGENT/
+            /sw_ux/s6/bin/s6-svc -o $S6_SERVICE_HOME/\$AGENT/
         fi
     done
 fi

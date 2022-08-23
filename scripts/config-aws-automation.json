@@ -1,0 +1,20 @@
+{
+  "event": {
+    "action": "JOB_NAME",
+    "category": "authentication",
+    "reason": "Job triggered",
+    "type": "start",
+    "url": "JOB_URL"
+  },
+  "labels": {
+    "project": "jenkins"
+  },
+  "service": {
+    "name": "aws-automation",
+    "environment": "production",
+    "version": "2.73.2"
+  },
+  "user": {
+    "id": "USER_ID"
+  }
+}

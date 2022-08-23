@@ -8,11 +8,11 @@ if [ "${#SERVER_CONFIGS[@]}" -gt 0 ]; then
     for SERVER_CONFIG in ${SERVER_CONFIGS[@]} ; do
         export HOST=$(cat $SERVER_CONFIG | jq -r '.address')
         export FB_RELEASE=$(cat $SERVER_CONFIG | jq -r '.fluentBitRelease')
-        if [ -z "$FB_RELEASE" ]; then
-            FB_RELEASE=$BASE_FB_RELEASE
+        if [ "$FB_RELEASE" == "null" ]; then
+            export FB_RELEASE=$BASE_FB_RELEASE
         fi
         if [ "$HOST" != "localhost" ]; then
-            echo $HOST
+            echo "$HOST - target: $FB_RELEASE"
             sshpass -p $CD_PASS ssh -q $CD_USER@$HOST /bin/bash <<EOF
 if [ -r $AGENT_ROOT ]; then
     AGENTS=\$(ls -d $AGENT_ROOT/fluent-bit.* 2>/dev/null)
@@ -21,7 +21,8 @@ if [ -r $AGENT_ROOT ]; then
             AGENT=\$(basename \$agent)
             AGENT_HOME=$AGENT_ROOT/\$AGENT
             if [ -r \$AGENT_HOME ]; then
-                AGENT_VERSION=\$(\$AGENT_HOME/bin/fluent-bit --version)
+                export LD_LIBRARY_PATH="\${AGENT_HOME}/lib"
+                AGENT_VERSION=\$(\$AGENT_HOME/bin/fluent-bit --version | head -1 | tr -d '\n')
                 echo -n "- \$AGENT: \${AGENT_VERSION:12}"
                 if [ "$FB_RELEASE" = "\${AGENT_VERSION:12}" ]; then
                     echo ""

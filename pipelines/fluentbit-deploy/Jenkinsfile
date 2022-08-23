@@ -9,7 +9,6 @@ pipeline {
         PIPELINE_ARTIFACTORY_CREDS = credentials('d7d54e7d-10c1-4466-a6d6-82ea62699416')
         FUNBUCKS_OUTPUT = "nr-funbucks/output"
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        FLUENTBIT_DEPLOYER_TOKEN = credentials('fluentbit-deployer')
         FLUENTBIT_RELEASE = setFluentBitRelease("${params.fluentbitHost}")
         BIN_DIR = "/sw_ux/bin"
         AGENT_ROOT = "/apps_ux/agents"
@@ -23,30 +22,12 @@ pipeline {
         JQ_RELEASE = "1.6"
         SQLITE_RELEASE = "3.38.5"
         TMP_DIR = "/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}"
-        VAULT_TOKEN = """${sh(
-                returnStdout: true,
-                script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$FLUENTBIT_DEPLOYER_TOKEN /sw_ux/bin/vault token create \
-                    -ttl=300 -explicit-max-ttl=300 -renewable=false -field=token -policy=system/isss-ci-read -policy=system/isss-cdua-read"
-            )}"""
+        BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
+        CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
+        BASIC_HTTP_USER = "brokeruser"
+        BASIC_HTTP_PASSWORD = credentials('nr-broker-password')
     }
     stages {
-        stage('Checkout') {
-            steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    doGenerateSubmoduleConfigurations: false,
-                    gitTool: 'jgit',
-                    submoduleCfg: [],
-                    userRemoteConfigs: [
-                        [
-                            credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
-                            url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/fluentbit/fluentbit-deploy.git'
-                        ]
-                    ]
-                ])
-            }
-        }
         stage('Setup funbucks') {
             environment {
                 HTTP_PROXY = setHttpProxy("${params.fluentbitHost}")
@@ -87,6 +68,10 @@ _auth=$pass
         stage('Get credentials') {
             steps {
                 script {
+                    env.VAULT_TOKEN = sh(
+                        returnStdout: true,
+                        script: "set +x; scripts/vault_token.sh scripts/config-jenkins.json"
+                    )
                     env.CD_USER = sh(
                         returnStdout: true,
                         script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins-isss-cdua"
