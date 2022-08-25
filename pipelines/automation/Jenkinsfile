@@ -88,7 +88,7 @@ pipeline {
                     def messageArr = jsonParse(automationOutput)
                     def agentMap = [:]
                     messageArr.each {
-                        if (agentMap[it.agent]) {
+                        if (agentMap[it.server + it.agent]) {
                           return
                         }
                         def job = hudson.model.Hudson.instance.getItemByFullName("FLUENTBIT/fluentbit-start-agent")
@@ -101,7 +101,7 @@ pipeline {
 
                         // logger.info('Starting: ' + it.agent)
                         hudson.model.Hudson.instance.queue.schedule(job, 0, causeAction, paramsAction)
-                        agentMap[it.agent] = true;
+                        agentMap[it.server + it.agent] = true;
                     }
                 }
             }
