@@ -34,7 +34,7 @@ sed 's/VAULT_TOKEN=.*/'VAULT_TOKEN=\""\$APP_TOKEN"\"'/g;s/METRIC_HOST_NETWORK_IN
 chmod 700 \$AGENT_HOME/bin/.env
 if [ -r $S6_SERVICE_HOME/$AGENT/run ]; then
     AGENT_UP=\$(/sw_ux/s6/bin/s6-svstat -o up $S6_SERVICE_HOME/$AGENT/)
-    if [ "$AGENT_UP" = "true" ]; then
+    if [ "\$AGENT_UP" = "true" ]; then
       /sw_ux/s6/bin/s6-svc -d $S6_SERVICE_HOME/$AGENT/
       sleep 6
     fi
