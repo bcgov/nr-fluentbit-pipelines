@@ -19,7 +19,7 @@ if [ "\${#AGENTS[@]}" -gt 0 ]; then
             /sw_ux/s6/bin/s6-svc -d $S6_SERVICE_HOME/\$AGENT/
         fi
     done
-    sleep 5
+    sleep 6
     for agent in \${AGENTS[@]}; do
         AGENT=\$(basename \$agent)
         AGENT_HOME=$AGENT_ROOT/\$AGENT
