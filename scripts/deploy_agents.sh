@@ -60,6 +60,8 @@ for agent in \${AGENTS[@]} ; do
     sed -e "s,\\\$HTTP_PROXY,$HTTP_PROXY,g" -e "s,{{ apm_agent_home }},\$AGENT_HOME,g" $TMP_DIR/files/fluent-bit.hcl > \$AGENT_HOME/conf/fluent-bit.hcl
     cp $TMP_DIR/files/fluentbitw \$AGENT_HOME/bin
     cp $TMP_DIR/files/.env \$AGENT_HOME/bin/.env.template
+    cp $TMP_DIR/files/down-signal $S6_SERVICE_HOME\/\$AGENT
+    chmod 664 $S6_SERVICE_HOME\/\$AGENT/down-signal
     sed -e "s,\\\$S6_SERVICE_DIR,$S6_SERVICE_HOME\/\$AGENT,g;s/AGENT_NAME=.*/AGENT_NAME=\""\$AGENT"\"/g" $TMP_DIR/files/.env > \$AGENT_HOME/bin/.env.template
 
     ln -sfn \$AGENT_HOME/bin/fluentbitw $S6_SERVICE_HOME/\$AGENT/run
