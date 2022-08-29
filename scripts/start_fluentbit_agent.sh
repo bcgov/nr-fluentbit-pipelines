@@ -33,6 +33,11 @@ APP_TOKEN=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/
 sed 's/VAULT_TOKEN=.*/'VAULT_TOKEN=\""\$APP_TOKEN"\"'/g;s/METRIC_HOST_NETWORK_INTERFACE_NAME=.*/'METRIC_HOST_NETWORK_INTERFACE_NAME=\""\$METRIC_HOST_NETWORK_INTERFACE_NAME"\"'/g' \$AGENT_HOME/bin/.env.template > \$AGENT_HOME/bin/.env
 chmod 700 \$AGENT_HOME/bin/.env
 if [ -r $S6_SERVICE_HOME/$AGENT/run ]; then
+    AGENT_UP=\$(/sw_ux/s6/bin/s6-svstat -o up $S6_SERVICE_HOME/$AGENT/)
+    if [ "$AGENT_UP" = "true" ]; then
+      /sw_ux/s6/bin/s6-svc -d $S6_SERVICE_HOME/$AGENT/
+      sleep 6
+    fi
     /sw_ux/s6/bin/s6-svc -o $S6_SERVICE_HOME/$AGENT/
 fi
 EOF
