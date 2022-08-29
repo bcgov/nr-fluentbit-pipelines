@@ -35,6 +35,7 @@ chmod 700 \$AGENT_HOME/bin/.env
 if [ -r $S6_SERVICE_HOME/$AGENT/run ]; then
     AGENT_UP=\$(/sw_ux/s6/bin/s6-svstat -o up $S6_SERVICE_HOME/$AGENT/)
     if [ "\$AGENT_UP" = "true" ]; then
+      echo "Stopping agent with: /sw_ux/s6/bin/s6-svc -d $S6_SERVICE_HOME/$AGENT/"
       /sw_ux/s6/bin/s6-svc -d $S6_SERVICE_HOME/$AGENT/
       sleep 6
     fi
