@@ -98,7 +98,7 @@ pipeline {
                             def cause = new hudson.model.Cause.RemoteCause("https://apm.io.nrs.gov.bc.ca", "Automation")
                             def causeAction = new hudson.model.CauseAction(cause)
 
-                            echo 'Starting: ' + it.server ':' + it.agent
+                            echo 'Starting: ' + it.server + ':' + it.agent
                             hudson.model.Hudson.instance.queue.schedule(job, 0, causeAction, paramsAction)
                             agentMap[it.server + it.agent] = true;
                         }
