@@ -2,7 +2,7 @@ import groovy.json.JsonSlurperClassic
 
 @NonCPS
 def jsonParse(def json) {
-    new groovy.json.JsonSlurperClassic().parseText(json)
+    return new groovy.json.JsonSlurperClassic().parseText(json)
 }
 
 pipeline {
@@ -85,23 +85,23 @@ pipeline {
                     )
                     .substring(17)
                     .trim()
+                    echo automationOutput
                     def messageArr = jsonParse(automationOutput)
                     def agentMap = [:]
                     messageArr.each {
-                        if (agentMap[it.server + it.agent]) {
-                          return
-                        }
-                        def job = hudson.model.Hudson.instance.getItemByFullName("FLUENTBIT/fluentbit-start-agent")
-                        def params = []
-                        params += new StringParameterValue('fluentbitHost', it.server)
-                        params += new StringParameterValue('fluentbitAgent', it.agent)
-                        def paramsAction = new ParametersAction(params)
-                        def cause = new hudson.model.Cause.RemoteCause("https://apm.io.nrs.gov.bc.ca", "Automation")
-                        def causeAction = new hudson.model.CauseAction(cause)
+                        if (!agentMap[it.server + it.agent]) {
+                            def job = hudson.model.Hudson.instance.getItemByFullName("FLUENTBIT/fluentbit-start-agent")
+                            def params = []
+                            params += new StringParameterValue('fluentbitHost', it.server)
+                            params += new StringParameterValue('fluentbitAgent', it.agent)
+                            def paramsAction = new ParametersAction(params)
+                            def cause = new hudson.model.Cause.RemoteCause("https://apm.io.nrs.gov.bc.ca", "Automation")
+                            def causeAction = new hudson.model.CauseAction(cause)
 
-                        // logger.info('Starting: ' + it.agent)
-                        hudson.model.Hudson.instance.queue.schedule(job, 0, causeAction, paramsAction)
-                        agentMap[it.server + it.agent] = true;
+                            echo 'Starting: ' + it.server + ':' + it.agent
+                            hudson.model.Hudson.instance.queue.schedule(job, 0, causeAction, paramsAction)
+                            agentMap[it.server + it.agent] = true;
+                        }
                     }
                 }
             }
