@@ -12,7 +12,7 @@ else
 fi
 
 # get role-id
-ROLE_ID=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault read -field=role_id auth/vs_apps_approle/role/fluent_fluent-bit_prod/role-id)
+# ROLE_ID=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault read -field=role_id auth/vs_apps_approle/role/fluent_fluent-bit_prod/role-id)
 
 # extract interface name
 METRIC_HOST_NETWORK_INTERFACE_NAME=\$(ip addr | awk '
@@ -34,8 +34,8 @@ for agent in \${AGENTS[@]} ; do
         VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=\$PREVIOUS_TOKEN /sw_ux/bin/vault token revoke -self
     fi
     # generate and deploy new app token to .env file
-    SECRET_ID=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -force -field=secret_id auth/vs_apps_approle/role/fluent_fluent-bit_prod/secret-id)
-    APP_TOKEN=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -force -field=token auth/vs_apps_approle/login role_id=\$ROLE_ID secret_id=\$SECRET_ID)
+    FB_SECRET_ID=\$(set +x; VAULT_ADDR=$VAULT_ADDR /sw_ux/bin/vault unwrap -field=secret_id $WRAPPED_FB_SECRET_ID)
+    APP_TOKEN=\$(set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault write -force -field=token auth/vs_apps_approle/login role_id=$FB_ROLE_ID secret_id=\$FB_SECRET_ID)
     sed 's/VAULT_TOKEN=.*/'VAULT_TOKEN=\""\$APP_TOKEN"\"'/g;s/METRIC_HOST_NETWORK_INTERFACE_NAME=.*/'METRIC_HOST_NETWORK_INTERFACE_NAME=\""\$METRIC_HOST_NETWORK_INTERFACE_NAME"\"'/g' \$AGENT_HOME/bin/.env.template > \$AGENT_HOME/bin/.env
     chmod 700 \$AGENT_HOME/bin/.env
     if [ -r $S6_SERVICE_HOME/\$AGENT/run ]; then
