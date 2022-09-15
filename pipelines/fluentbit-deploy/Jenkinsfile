@@ -127,7 +127,7 @@ _auth=$pass
         }
         stage('Start fluent bit') {
             steps {           
-                sh 'scripts/start_fluentbit.sh'
+                sh 'scripts/start_fluentbit_agent.sh'
             }
         }
     }
