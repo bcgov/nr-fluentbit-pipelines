@@ -32,7 +32,7 @@ fi
 for agent in \${AGENTS[@]} ; do
   AGENT=\$(basename \$agent)
 
-  AGENT_HOME=$AGENT_ROOT/$AGENT
+  AGENT_HOME=$AGENT_ROOT/\$AGENT
   # revoke previous token
   if [ -r \$AGENT_HOME/bin/.env ]; then
       echo "Attempting to revoke previous token..."
