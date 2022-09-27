@@ -43,24 +43,25 @@ for agent in \${AGENTS[@]} ; do
   APP_TOKEN=\$(set +x; VAULT_ADDR=$VAULT_ADDR /sw_ux/bin/vault write -force -field=token auth/vs_apps_approle/login role_id=$FB_ROLE_ID secret_id=\$FB_SECRET_ID)
   sed 's/VAULT_TOKEN=.*/'VAULT_TOKEN=\""\$APP_TOKEN"\"'/g;s/METRIC_HOST_NETWORK_INTERFACE_NAME=.*/'METRIC_HOST_NETWORK_INTERFACE_NAME=\""\$METRIC_HOST_NETWORK_INTERFACE_NAME"\"'/g' \$AGENT_HOME/bin/.env.template > \$AGENT_HOME/bin/.env
   chmod 700 \$AGENT_HOME/bin/.env
-  if [ -r $S6_SERVICE_HOME/$AGENT/run ]; then
-      AGENT_UP=\$(/sw_ux/s6/bin/s6-svstat -o up $S6_SERVICE_HOME/$AGENT/)
+  if [ -r $S6_SERVICE_HOME/\$AGENT/run ]; then
+      AGENT_UP=\$(/sw_ux/s6/bin/s6-svstat -o up $S6_SERVICE_HOME/\$AGENT/)
       if [ "\$AGENT_UP" = "true" ]; then
         # s6 is too old on some servers to do this
-        #echo "Stopping agent with: /sw_ux/s6/bin/s6-svc -d $S6_SERVICE_HOME/$AGENT/"
-        #/sw_ux/s6/bin/s6-svc -d $S6_SERVICE_HOME/$AGENT/
-        echo "Stopping agent with: /sw_ux/s6/bin/s6-svc -i $S6_SERVICE_HOME/$AGENT/"
-        /sw_ux/s6/bin/s6-svc -i $S6_SERVICE_HOME/$AGENT/
+        #echo "Stopping agent with: /sw_ux/s6/bin/s6-svc -d $S6_SERVICE_HOME/\$AGENT/"
+        #/sw_ux/s6/bin/s6-svc -d $S6_SERVICE_HOME/\$AGENT/
+        echo "Stopping agent with: /sw_ux/s6/bin/s6-svc -i $S6_SERVICE_HOME/\$AGENT/"
+        /sw_ux/s6/bin/s6-svc -i $S6_SERVICE_HOME/\$AGENT/
         for (( c = 0; c < 6; c++ ))
         do
-          AGENT_UP=\$(/sw_ux/s6/bin/s6-svstat -o up $S6_SERVICE_HOME/$AGENT/)
+          AGENT_UP=\$(/sw_ux/s6/bin/s6-svstat -o up $S6_SERVICE_HOME/\$AGENT/)
           if [ "\$AGENT_UP" = "false" ]; then
             break
           fi
           sleep 1
         done
       fi
-      /sw_ux/s6/bin/s6-svc -o $S6_SERVICE_HOME/$AGENT/
+      echo "Starting agent $HOST : \$AGENT"
+      /sw_ux/s6/bin/s6-svc -o $S6_SERVICE_HOME/\$AGENT/
   fi
 done
 EOF
