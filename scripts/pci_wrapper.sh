@@ -45,4 +45,4 @@ scripts/copy_files.sh
 scripts/deploy_agents.sh
 
 # start agents
-scripts/start_fluentbit.sh
+scripts/start_fluentbit_agent.sh

@@ -24,6 +24,7 @@ pipeline {
         TMP_DIR = "/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}"
         BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
+        FB_ROLE_ID = credentials('knox-vault-fluentbit-app-role-id')
         BASIC_HTTP_USER = "brokeruser"
         BASIC_HTTP_PASSWORD = credentials('nr-broker-password')
     }
@@ -87,7 +88,11 @@ _auth=$pass
                     env.CI_PASS = sh(
                         returnStdout: true,
                         script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-ci"
-                    )
+                    )  
+                    env.WRAPPED_FB_SECRET_ID = sh(
+                        returnStdout: true,
+                        script: "set +x; scripts/vault_secret_id.sh"
+                    )                  
                 }
             }
         }
@@ -121,10 +126,8 @@ _auth=$pass
             }
         }
         stage('Start fluent bit') {
-            steps {
-                build job: 'FLUENTBIT/fluentbit-start', parameters: [
-                    [$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost]
-                ]
+            steps {           
+                sh 'scripts/start_fluentbit_agent.sh'
             }
         }
     }
