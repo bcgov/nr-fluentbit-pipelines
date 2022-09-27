@@ -88,11 +88,7 @@ _auth=$pass
                     env.CI_PASS = sh(
                         returnStdout: true,
                         script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-ci"
-                    )  
-                    env.WRAPPED_FB_SECRET_ID = sh(
-                        returnStdout: true,
-                        script: "set +x; scripts/vault_secret_id.sh"
-                    )                  
+                    )
                 }
             }
         }
@@ -125,8 +121,18 @@ _auth=$pass
                 sh 'scripts/deploy_agents.sh'
             }
         }
+        stage('Get secret') {
+            steps {
+                script {
+                    env.WRAPPED_FB_SECRET_ID = sh(
+                        returnStdout: true,
+                        script: "set +x; scripts/vault_secret_id.sh"
+                    )
+                }
+            }
+        }
         stage('Start fluent bit') {
-            steps {           
+            steps {
                 sh 'scripts/start_fluentbit_agent.sh'
             }
         }
