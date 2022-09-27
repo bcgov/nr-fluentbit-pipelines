@@ -7,11 +7,8 @@ pipeline {
     environment {
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
         PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
-        BIN_DIR = "/sw_ux/bin"
-        PCI="false"
         INSTALL_USER="wwwadm"
         RUN_USER="wwwsvr"
-        AGENT_ROOT = "/apps_ux/agents"
         S6_SERVICE_HOME = "/apps_ux/s6_services"
         BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
@@ -25,6 +22,16 @@ pipeline {
                     commonModule = load "pipelines/common.groovy"
                     env.CAUSE_USER_ID = commonModule.getCauseUserId()
                     env.HOST = commonModule.getHost("${params.fluentbitHost}")
+                    env.SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
+                    if (env.SERVER_OS != "linux" && env.SERVER_OS != "windows") {
+                        currentBuild.result = 'ABORTED'
+                        error('Invalid server OS')
+                    }
+                    env.BIN_DIR = "${env.SERVER_OS == "linux" ? "/sw_ux/bin" : "E:/sw_nt"}"
+                    env.AGENT_ROOT = "${env.SERVER_OS == "linux" ? "/apps_ux/agents" : "E:/apps_nt/agents"}"
+                    env.VAULT_CD_USER_FIELD = commonModule.getVaultCdUserField("${params.fluentbitHost}")
+                    env.VAULT_CD_PASS_FIELD = commonModule.getVaultCdPassField("${params.fluentbitHost}")
+                    env.VAULT_CD_PATH = commonModule.getVaultCdPath("${params.fluentbitHost}")
                 }
             }
         }
@@ -41,18 +48,18 @@ pipeline {
                     )
                     env.CD_USER = sh(
                         returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins-isss-cdua"
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_USER_FIELD} ${env.VAULT_CD_PATH}"
                     )
                     env.CD_PASS = sh(
                         returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-cdua"
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_PASS_FIELD} ${env.VAULT_CD_PATH}"
                     )
                 }
             }
         }
         stage('Stop fluent bit') {
             steps {
-                sh 'scripts/stop_fluentbit.sh'
+                sh "scripts/${SERVER_OS.toLowerCase()}/stop_fluentbit.sh"
             }
         }
     }

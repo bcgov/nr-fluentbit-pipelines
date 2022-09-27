@@ -19,6 +19,15 @@ pipeline {
                 script {
                     commonModule = load "pipelines/common.groovy"
                     env.CAUSE_USER_ID = commonModule.getCauseUserId()
+                    env.SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
+                    if (env.SERVER_OS !== "linux" && env.SERVER_OS !== "windows") {
+                        currentBuild.result = 'ABORTED'
+                        error('Invalid server OS')
+                    }
+                    env.AGENT_ROOT = "${env.SERVER_OS == "linux" ? "/apps_ux/agents" : "E:/apps_nt/agents"}"
+                    env.VAULT_CD_USER_FIELD = commonModule.getVaultCdUserField("${params.fluentbitHost}")
+                    env.VAULT_CD_PASS_FIELD = commonModule.getVaultCdPassField("${params.fluentbitHost}")
+                    env.VAULT_CD_PATH = commonModule.getVaultCdPath("${params.fluentbitHost}")
                 }
             }
         }
@@ -55,18 +64,18 @@ pipeline {
                     )
                     env.CD_USER = sh(
                         returnStdout: true,
-                        script: "set +x; /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins-isss-cdua"
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_USER_FIELD} ${env.VAULT_CD_PATH}"
                     )
                     env.CD_PASS = sh(
                         returnStdout: true,
-                        script: "set +x; /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-cdua"
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_PASS_FIELD} ${env.VAULT_CD_PATH}"
                     )
                 }
             }
         }
         stage('Status') {
             steps {
-                sh 'scripts/fluentbit_status.sh'
+                sh "scripts/${SERVER_OS.toLowerCase()}/fluentbit_status.sh"
             }
         }
     }
