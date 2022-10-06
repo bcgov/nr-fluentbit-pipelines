@@ -1,0 +1,22 @@
+{
+  "event": {
+    "provider": "aws-automation-jenkins-job",
+    "reason": "Job triggered",
+    "url": "JOB_URL"
+  },
+  "actions": [
+    {
+      "action": "server-access",
+      "id": "login",
+      "provision": ["token/self"],
+      "service": {
+        "name": "aws-automation",
+        "project": "jenkins",
+        "environment": "production"
+      }
+    }
+  ],
+  "user": {
+    "id": "USER_ID"
+  }
+}

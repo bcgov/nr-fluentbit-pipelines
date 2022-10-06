@@ -37,9 +37,13 @@ pipeline {
         stage('Get credentials') {
             steps {
                 script {
+                    env.INTENTION_JSON = sh(
+                        returnStdout: true,
+                        script: "set +x; scripts/broker_intention_open.sh scripts/intention-fb-configure.json"
+                    )
                     env.VAULT_TOKEN = sh(
                         returnStdout: true,
-                        script: "set +x; scripts/vault_token.sh scripts/config-jenkins.json"
+                        script: "set +x; scripts/vault_token.sh"
                     )
                     env.CD_USER = sh(
                         returnStdout: true,
@@ -56,6 +60,17 @@ pipeline {
             steps {
                 sh 'scripts/fluentbit_status.sh'
             }
+        }
+    }
+    post {
+        success {
+            sh "set +x; scripts/broker_intention_close.sh 'success'"
+        }
+        unstable {
+            sh "set +x; scripts/broker_intention_close.sh 'failure'"
+        }
+        failure {
+            sh "set +x; scripts/broker_intention_close.sh 'failure'"
         }
     }
 }

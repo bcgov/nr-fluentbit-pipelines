@@ -47,9 +47,13 @@ pipeline {
         stage('Get credentials') {
             steps {
                 script {
+                    env.INTENTION_JSON = sh(
+                        returnStdout: true,
+                        script: "set +x; scripts/broker_intention_open.sh scripts/intention-aws-automation.json"
+                    )
                     env.APP_TOKEN = sh(
                         returnStdout: true,
-                        script: "set +x; scripts/vault_token.sh scripts/config-aws-automation.json"
+                        script: "set +x; scripts/vault_token.sh"
                     )
                     env.AWS_ACCOUNT_NUMBER = sh(
                         returnStdout: true,
@@ -105,6 +109,17 @@ pipeline {
                     }
                 }
             }
+        }
+    }
+    post {
+        success {
+            sh "set +x; scripts/broker_intention_close.sh 'success'"
+        }
+        unstable {
+            sh "set +x; scripts/broker_intention_close.sh 'failure'"
+        }
+        failure {
+            sh "set +x; scripts/broker_intention_close.sh 'failure'"
         }
     }
 }
