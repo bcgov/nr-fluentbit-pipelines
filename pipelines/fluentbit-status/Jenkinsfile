@@ -61,10 +61,16 @@ pipeline {
                 sh 'scripts/fluentbit_status.sh'
             }
         }
-        stage('Finalize') {
-            steps {
-                sh 'scripts/broker_intention_close.sh'
-            }
+    }
+    post {
+        success {
+            sh "set +x; scripts/broker_intention_close.sh 'success'"
+        }
+        unstable {
+            sh "set +x; scripts/broker_intention_close.sh 'failure'"
+        }
+        failure {
+            sh "set +x; scripts/broker_intention_close.sh 'failure'"
         }
     }
 }
