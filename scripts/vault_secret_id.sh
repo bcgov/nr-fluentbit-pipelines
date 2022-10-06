@@ -1,6 +1,6 @@
 #!/bin/sh
 
-TOKEN=$(echo $INTENTION_JSON | /sw_ux/bin/jq -r '.intention.provision.token')
+TOKEN=$(echo $INTENTION_JSON | /sw_ux/bin/jq -r '.actions.provision.token')
 
 WRAPPED_VAULT_TOKEN=$(curl -s -X POST $BROKER_URL/v1/provision/approle/secret-id \
   -H 'Content-Type: application/json' \
