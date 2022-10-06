@@ -2,7 +2,7 @@
 
 TOKEN=$(echo $INTENTION_JSON | /sw_ux/bin/jq -r '.intention.login.token')
 
-WRAPPED_VAULT_TOKEN=$(curl -s -X POST $BROKER_URL/provision/token/self \
+WRAPPED_VAULT_TOKEN=$(curl -s -X POST $BROKER_URL/v1/provision/token/self \
   -H 'Content-Type: application/json' \
   -H 'X-Vault-Role-Id: '"$CONFIG_ROLE_ID"'' -H 'X-Broker-Token: '"$TOKEN"'' | \
   /sw_ux/bin/jq -r '.wrap_info.token')
