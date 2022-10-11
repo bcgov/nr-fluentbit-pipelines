@@ -1,4 +1,4 @@
-import groovy.transform.Field
+def commonModule = [:]
 
 pipeline {
     agent {
@@ -9,11 +9,9 @@ pipeline {
         PIPELINE_ARTIFACTORY_CREDS = credentials('d7d54e7d-10c1-4466-a6d6-82ea62699416')
         FUNBUCKS_OUTPUT = "nr-funbucks/output"
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        FLUENTBIT_RELEASE = setFluentBitRelease("${params.fluentbitHost}")
         BIN_DIR = "/sw_ux/bin"
         AGENT_ROOT = "/apps_ux/agents"
         S6_SERVICE_HOME = "/apps_ux/s6_services"
-        HOST = setHost("${params.fluentbitHost}")
         PCI="false"
         INSTALL_USER = "wwwadm"
         RUN_USER = "wwwsvr"
@@ -29,10 +27,20 @@ pipeline {
         BASIC_HTTP_PASSWORD = credentials('nr-broker-password')
     }
     stages {
-        stage('Setup funbucks') {
+        stage('Setup') {
+            steps {
+                script {
+                    commonModule = load "pipelines/common.groovy"
+                    env.CAUSE_USER_ID = commonModule.getCauseUserId()
+                    env.FLUENTBIT_RELEASE = commonModule.getFluentBitRelease("${params.fluentbitHost}")
+                    env.HOST = commonModule.getHost("${params.fluentbitHost}")
+                }
+            }
+        }
+        stage('Funbucks') {
             environment {
-                HTTP_PROXY = setHttpProxy("${params.fluentbitHost}")
-                HTTPS_PROXY = setHttpProxy("${params.fluentbitHost}")
+                HTTP_PROXY = commonModule.getHttpProxy("${params.fluentbitHost}")
+                HTTPS_PROXY = commonModule.getHttpProxy("${params.fluentbitHost}")
                 NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
             }
             steps {
@@ -115,8 +123,8 @@ _auth=$pass
         }
         stage('Deploy agents') {
             environment {
-                HTTP_PROXY_URL = setHttpProxy("${params.fluentbitHost}")
-                LOGS_PROXY_DISABLED = setLogsProxyDisabled("${params.fluentbitHost}")
+                HTTP_PROXY_URL = commonModule.getHttpProxy("${params.fluentbitHost}")
+                LOGS_PROXY_DISABLED = commonModule.getLogsProxyDisabled("${params.fluentbitHost}")
                 HTTP_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
                 HTTPS_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
                 NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
@@ -152,54 +160,4 @@ _auth=$pass
             sh "set +x; scripts/broker_intention_close.sh 'failure'"
         }
     }
-}
-
-@Field
-def checkoutDone = false
-// Helper Functions
-def checkoutConfig(fluentbitHost) {
-    if (checkoutDone && fileExists("fb/config/server/${fluentbitHost}.json")) {
-        return
-    }
-    checkoutDone = true
-    dir("fb") {
-        deleteDir()
-    }
-    checkout([
-        $class: 'GitSCM',
-        branches: [[name: '*/main']],
-        doGenerateSubmoduleConfigurations: false,
-        extensions: [
-            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'fb'],
-            [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[[$class:'SparseCheckoutPath', path: "config/server/${fluentbitHost}.json"], [$class:'SparseCheckoutPath', path: "config/base.json"]]]
-        ],
-        submoduleCfg: [],
-        userRemoteConfigs: [
-            [
-                credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
-                url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-nr-funbucks.git'
-            ]
-        ]
-    ])
-}
-def setFluentBitRelease(fluentbitHost) {
-    checkoutConfig(fluentbitHost)
-    def baseProps = readJSON file: "fb/config/base.json"
-    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
-    return props.fluentBitRelease ? props.fluentBitRelease : baseProps.fluentBitRelease
-}
-def setHost(fluentbitHost) {
-    checkoutConfig(fluentbitHost)
-    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
-    return props.address
-}
-def setHttpProxy(fluentbitHost) {
-    checkoutConfig(fluentbitHost)
-    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
-    return props.proxy
-}
-def setLogsProxyDisabled(fluentbitHost) {
-    checkoutConfig(fluentbitHost)
-    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
-    return props.logsProxyDisabled
 }

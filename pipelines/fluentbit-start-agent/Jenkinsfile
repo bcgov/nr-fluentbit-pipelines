@@ -1,4 +1,4 @@
-import groovy.transform.Field
+def commonModule = [:]
 
 pipeline {
     agent {
@@ -14,7 +14,6 @@ pipeline {
         AGENT_ROOT = "/apps_ux/agents"
         AGENT = "${params.fluentbitAgent}"
         S6_SERVICE_HOME = "/apps_ux/s6_services"
-        HOST = setHost("${params.fluentbitHost}")
         BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
         FB_ROLE_ID = credentials('knox-vault-fluentbit-app-role-id')
@@ -22,6 +21,15 @@ pipeline {
         BASIC_HTTP_PASSWORD = credentials('nr-broker-password')
     }
     stages {
+        stage('Setup') {
+            steps {
+                script {
+                    commonModule = load "pipelines/common.groovy"
+                    env.CAUSE_USER_ID = commonModule.getCauseUserId()
+                    env.HOST = commonModule.getHost("${params.fluentbitHost}")
+                }
+            }
+        }
         stage('Get credentials') {
             steps {
                 script {
@@ -65,38 +73,4 @@ pipeline {
             sh "set +x; scripts/broker_intention_close.sh 'failure'"
         }
     }
-}
-
-@Field
-def checkoutDone = false
-// Helper Functions
-def checkoutConfig(fluentbitHost) {
-    if (checkoutDone && fileExists("fb/config/server/${fluentbitHost}.json")) {
-        return
-    }
-    checkoutDone = true
-    dir("fb") {
-        deleteDir()
-    }
-    checkout([
-        $class: 'GitSCM',
-        branches: [[name: '*/main']],
-        doGenerateSubmoduleConfigurations: false,
-        extensions: [
-            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'fb'],
-            [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[[$class:'SparseCheckoutPath', path: "config/server/${fluentbitHost}.json"]]]
-        ],
-        submoduleCfg: [],
-        userRemoteConfigs: [
-            [
-                credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
-                url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-nr-funbucks.git'
-            ]
-        ]
-    ])
-}
-def setHost(fluentbitHost) {
-    checkoutConfig(fluentbitHost)
-    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
-    return props.address
 }

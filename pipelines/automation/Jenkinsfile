@@ -4,6 +4,7 @@ import groovy.json.JsonSlurperClassic
 def jsonParse(def json) {
     return new groovy.json.JsonSlurperClassic().parseText(json)
 }
+def commonModule = [:]
 
 pipeline {
     agent {
@@ -42,6 +43,14 @@ pipeline {
                         ]
                     ]
                 ])
+            }
+        }
+        stage('Setup') {
+            steps {
+                script {
+                    commonModule = load "pipelines/common.groovy"
+                    env.CAUSE_USER_ID = commonModule.getCauseUserId()
+                }
             }
         }
         stage('Get credentials') {
