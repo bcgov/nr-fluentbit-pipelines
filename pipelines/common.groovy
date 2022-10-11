@@ -17,7 +17,9 @@ def checkoutConfig(fluentbitHost) {
         doGenerateSubmoduleConfigurations: false,
         extensions: [
             [$class: 'RelativeTargetDirectory', relativeTargetDir: 'fb'],
-            [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[[$class:'SparseCheckoutPath', path: "config/server/${fluentbitHost}.json"]]]
+            [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths: [
+                [$class:'SparseCheckoutPath', path: "config/server/${fluentbitHost}.json"], [$class:'SparseCheckoutPath', path: "config/base.json"]
+            ]]
         ],
         submoduleCfg: [],
         userRemoteConfigs: [
