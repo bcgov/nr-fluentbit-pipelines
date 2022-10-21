@@ -61,7 +61,7 @@ _auth=$pass
 " > .npmrc'''
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '*/main']],
+                    branches: [[name: '/feat/minimalWindowsMetricProcess']],
                     doGenerateSubmoduleConfigurations: false,
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'nr-funbucks']],
                     gitTool: 'jgit',
@@ -119,7 +119,7 @@ _auth=$pass
         }
         stage('Stop fluent bit') {
             steps {
-                build job: 'FLUENTBIT/fluentbit-stop', parameters: [
+                build job: 'NPE/fluentbit-stop', parameters: [
                     [$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost]
                 ]
             }
