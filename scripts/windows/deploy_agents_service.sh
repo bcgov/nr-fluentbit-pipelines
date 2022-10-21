@@ -18,7 +18,6 @@ if (\$AGENTS.count -gt 0) {
       replace("{{bin_dir}}", "$BIN_DIR").
       replace("{{agent_root}}", "$AGENT_ROOT")
     } | Set-Content "\$AGENT_HOME/bin/\${AGENT}.xml" -Force
-    Get-Content "$TMP_DIR/files/run_fluentbit.bat" | % { \$_.replace("{{agent}}","\$AGENT") } | Set-Content "\$AGENT_HOME/bin/run_fluentbit.bat" -Force
     # install service
     Invoke-Expression -Command "\$AGENT_HOME/bin/\${AGENT}.exe install \$AGENT_HOME/bin/\${AGENT}.xml"
   }  
