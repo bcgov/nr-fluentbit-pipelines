@@ -25,4 +25,7 @@ if (\$AGENTS.count -gt 0) {
   throw "No agents found for deployment"
 }
 
+# clean up
+Remove-Item -Path "$TMP_DIR" -Recurse
+
 EOF
