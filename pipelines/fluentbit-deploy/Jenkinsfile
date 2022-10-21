@@ -61,7 +61,7 @@ _auth=$pass
 " > .npmrc'''
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '/feat/minimalWindowsMetricProcess']],
+                    branches: [[name: '*/feat/minimalWindowsMetricProcess']],
                     doGenerateSubmoduleConfigurations: false,
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'nr-funbucks']],
                     gitTool: 'jgit',
