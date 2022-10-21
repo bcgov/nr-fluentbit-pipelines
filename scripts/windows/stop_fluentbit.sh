@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set +x
 
-sshpass -p $CD_PASS ssh -q $CD_USER@$HOST powershell.exe <<EOF
+sshpass -p $CD_PASS ssh -q $CD_USER@$HOST powershell.exe -Command -<<EOF
 \$AGENTS = (Get-ChildItem -Directory -Path $AGENT_ROOT/fluent-bit.* -Name)
 
 # note the extra space after the loop
@@ -17,7 +17,7 @@ if (\$AGENTS.count -gt 0) {
       \$PREVIOUS_TOKEN = Select-String -Path "\$AGENT_HOME/bin/\${AGENT}.xml" -Pattern '(hvs\.[\D\d][^"]+)' | %{\$_.matches.value}
       \$env:VAULT_ADDR = "$VAULT_ADDR"
       \$env:VAULT_TOKEN = "\$PREVIOUS_TOKEN"
-      $VAULT_HOME/vault.exe token revoke -self
+      $BIN_DIR/vault/vault.exe token revoke -self
     }
     Stop-Service \$AGENT
   }
