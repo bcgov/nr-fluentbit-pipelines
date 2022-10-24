@@ -9,17 +9,14 @@ pipeline {
         PIPELINE_ARTIFACTORY_CREDS = credentials('d7d54e7d-10c1-4466-a6d6-82ea62699416')
         FUNBUCKS_OUTPUT = "nr-funbucks/output"
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        BIN_DIR = "/sw_ux/bin"
-        AGENT_ROOT = "/apps_ux/agents"
         S6_SERVICE_HOME = "/apps_ux/s6_services"
-        PCI="false"
         INSTALL_USER = "wwwadm"
         RUN_USER = "wwwsvr"
         VAULT_RELEASE = "1.10.4"
         ENVCONSUL_RELEASE = "0.12.1"
         JQ_RELEASE = "1.6"
         SQLITE_RELEASE = "3.38.5"
-        TMP_DIR = "/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}"
+        WINSW_RELEASE = "v2.11.0"
         BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
         FB_ROLE_ID = credentials('knox-vault-fluentbit-app-role-id')
@@ -34,6 +31,17 @@ pipeline {
                     env.CAUSE_USER_ID = commonModule.getCauseUserId()
                     env.FLUENTBIT_RELEASE = commonModule.getFluentBitRelease("${params.fluentbitHost}")
                     env.HOST = commonModule.getHost("${params.fluentbitHost}")
+                    env.SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
+                    if (env.SERVER_OS != "linux" && env.SERVER_OS != "windows") {
+                        currentBuild.result = 'ABORTED'
+                        error('Invalid server OS')
+                    }
+                    env.BIN_DIR = "${env.SERVER_OS == "linux" ? "/sw_ux/bin" : "E:/sw_nt"}"
+                    env.AGENT_ROOT = "${env.SERVER_OS == "linux" ? "/apps_ux/agents" : "E:/apps_nt/agents"}"
+                    env.TMP_DIR = "${env.SERVER_OS == "linux" ? "/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}" : "E:/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}"}"
+                    env.VAULT_CD_USER_FIELD = commonModule.getVaultCdUserField("${params.fluentbitHost}")
+                    env.VAULT_CD_PASS_FIELD = commonModule.getVaultCdPassField("${params.fluentbitHost}")
+                    env.VAULT_CD_PATH = commonModule.getVaultCdPath("${params.fluentbitHost}")
                 }
             }
         }
@@ -87,12 +95,12 @@ _auth=$pass
                     )
                     env.CD_USER = sh(
                         returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins-isss-cdua"
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_USER_FIELD} ${env.VAULT_CD_PATH}"
                     )
                     env.CD_PASS = sh(
                         returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-cdua"
-                    )
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_PASS_FIELD} ${env.VAULT_CD_PATH}"
+                    )                    
                     env.CI_USER = sh(
                         returnStdout: true,
                         script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins-isss-ci"
@@ -100,25 +108,23 @@ _auth=$pass
                     env.CI_PASS = sh(
                         returnStdout: true,
                         script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-ci"
-                    )
+                    )                    
                 }
             }
         }
         stage('Copy') {
             steps {
-                sh 'scripts/copy_files.sh'
+                sh "scripts/${SERVER_OS.toLowerCase()}/copy_files.sh"
             }
         }
         stage('Stop fluent bit') {
             steps {
-                build job: 'FLUENTBIT/fluentbit-stop', parameters: [
-                    [$class: 'StringParameterValue', name: 'fluentbitHost', value: params.fluentbitHost]
-                ]
+                sh "scripts/${SERVER_OS.toLowerCase()}/stop_fluentbit.sh"
             }
         }
         stage('Remove previous agents') {
             steps {
-                sh 'scripts/remove_agents.sh'
+                sh "scripts/${SERVER_OS.toLowerCase()}/remove_agents.sh"
             }
         }
         stage('Deploy agents') {
@@ -130,7 +136,14 @@ _auth=$pass
                 NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
             }
             steps {
-                sh 'scripts/deploy_agents.sh'
+                script {
+                    if (env.SERVER_OS == "linux") {
+                        sh 'scripts/linux/deploy_agents.sh'
+                    } else if (env.SERVER_OS == "windows") {
+                        sh 'scripts/windows/deploy_agents_base.sh'
+                        sh 'scripts/windows/deploy_agents_service.sh'
+                    }
+                }
             }
         }
         stage('Get secret') {
@@ -145,7 +158,7 @@ _auth=$pass
         }
         stage('Start fluent bit') {
             steps {
-                sh 'scripts/start_fluentbit_agent.sh'
+                sh "scripts/${SERVER_OS.toLowerCase()}/start_fluentbit_agent.sh"
             }
         }
     }

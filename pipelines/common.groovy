@@ -65,4 +65,28 @@ def getCauseUserId() {
         return 'unknown'
     }
 }
+
+def getServerOS(fluentbitHost) {
+    checkoutConfig(fluentbitHost)
+    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
+    return props.os
+}
+
+def getVaultCdUserField(fluentbitHost) {
+    checkoutConfig(fluentbitHost)
+    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
+    return props.vault_cd_user_field
+}
+
+def getVaultCdPassField(fluentbitHost) {
+    checkoutConfig(fluentbitHost)
+    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
+    return props.vault_cd_pass_field
+}
+
+def getVaultCdPath(fluentbitHost) {
+    checkoutConfig(fluentbitHost)
+    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
+    return props.vault_cd_path
+}
 return this
