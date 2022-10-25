@@ -23,5 +23,3 @@ exec {
   }
   kill_timeout = "5s"
 }
-
-pid_file = "{{ apm_agent_home }}/bin/pid"
