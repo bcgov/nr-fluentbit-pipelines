@@ -23,7 +23,7 @@ pipeline {
                     commonModule = load "pipelines/common.groovy"
                     env.CAUSE_USER_ID = commonModule.getCauseUserId()
                     env.HOST = commonModule.getHost("${params.fluentbitHost}")
-                    if (env.SERVER_OS !== "linux" && env.SERVER_OS !== "windows") {
+                    if (env.SERVER_OS != "linux") {
                         currentBuild.result = 'ABORTED'
                         error('Invalid server OS')
                     }
