@@ -33,6 +33,8 @@ chmod 755 $BIN_DIR/jq
 cd $TMP_DIR/bin
 tar -zxvf $TMP_DIR/bin/fluent-bit.tar.gz --strip-components=1
 tar -zxvf $TMP_DIR/bin/sqlite.tar.gz --strip-components=1 -C $BIN_DIR
+# set sqlite3 as executable
+chmod 755 $BIN_DIR/sqlite3
 # unzip vault and envconsul
 unzip -o $TMP_DIR/bin/vault_${VAULT_RELEASE}_linux_amd64.zip -d $BIN_DIR
 unzip -o $TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip -d $BIN_DIR
