@@ -72,6 +72,12 @@ def getServerOS(fluentbitHost) {
     return props.os
 }
 
+def getOSVariant(fluentbitHost) {
+    checkoutConfig(fluentbitHost)
+    def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
+    return props.os_variant
+}
+
 def getVaultCdUserField(fluentbitHost) {
     checkoutConfig(fluentbitHost)
     def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
