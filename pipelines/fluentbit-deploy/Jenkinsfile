@@ -36,6 +36,7 @@ pipeline {
                         currentBuild.result = 'ABORTED'
                         error('Invalid server OS')
                     }
+                    env.OS_VARIANT = commonModule.getOSVariant("${params.fluentbitHost}")
                     env.BIN_DIR = "${env.SERVER_OS == "linux" ? "/sw_ux/bin" : "E:/sw_nt"}"
                     env.AGENT_ROOT = "${env.SERVER_OS == "linux" ? "/apps_ux/agents" : "E:/apps_nt/agents"}"
                     env.TMP_DIR = "${env.SERVER_OS == "linux" ? "/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}" : "E:/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}"}"
