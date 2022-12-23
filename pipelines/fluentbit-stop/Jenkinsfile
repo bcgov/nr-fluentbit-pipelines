@@ -12,8 +12,7 @@ pipeline {
         S6_SERVICE_HOME = "/apps_ux/s6_services"
         BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
-        BASIC_HTTP_USER = "brokeruser"
-        BASIC_HTTP_PASSWORD = credentials('nr-broker-password')
+        BROKER_JWT = credentials('nr-broker-jwt')
     }
     stages {
         stage('Setup') {

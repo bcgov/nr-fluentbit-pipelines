@@ -16,8 +16,7 @@ pipeline {
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
         BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-aws-automation-role-id')
-        BASIC_HTTP_USER = "brokeruser"
-        BASIC_HTTP_PASSWORD = credentials('nr-broker-password')
+        BROKER_JWT = credentials('nr-broker-jwt')
 
         AWS_REGION = "ca-central-1"
         AWS_DEFAULT_REGION = "ca-central-1"
