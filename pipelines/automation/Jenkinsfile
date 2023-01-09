@@ -16,7 +16,7 @@ pipeline {
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
         BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-aws-automation-role-id')
-        BROKER_JWT = credentials('nr-broker-jwt')
+        NR_BROKER_JWT = credentials('nr-broker-jwt')
 
         AWS_REGION = "ca-central-1"
         AWS_DEFAULT_REGION = "ca-central-1"
@@ -59,6 +59,7 @@ pipeline {
                         returnStdout: true,
                         script: "set +x; scripts/broker_intention_open.sh scripts/intention-aws-automation.json"
                     )
+                    sh "scripts/broker_intention_action.sh start login"
                     env.APP_TOKEN = sh(
                         returnStdout: true,
                         script: "set +x; scripts/vault_token.sh"
@@ -79,6 +80,7 @@ pipeline {
                         returnStdout: true,
                         script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault kv get -field=aws_assume_role apps/prod/jenkins/aws-automation"
                     )
+                    sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault token revoke"
                 }
             }
         }
@@ -120,6 +122,7 @@ pipeline {
                             }
                         }
                     }
+                    sh "scripts/broker_intention_action.sh end login"
                 }
             }
         }

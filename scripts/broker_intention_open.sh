@@ -10,7 +10,7 @@ cat $1 | /sw_ux/bin/jq "\
 
 curl -s -X POST $BROKER_URL/v1/intention/open \
     -H 'Content-Type: application/json' \
-    -H "Authorization: Bearer $BROKER_JWT" \
+    -H "Authorization: Bearer $NR_BROKER_JWT" \
     -d @$TEMP_FILE
 
 rm $TEMP_FILE

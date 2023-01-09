@@ -10,7 +10,7 @@ pipeline {
         AGENT_ROOT = "/apps_ux/agents"
         BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
-        BROKER_JWT = credentials('nr-broker-jwt')
+        NR_BROKER_JWT = credentials('nr-broker-jwt')
     }
     stages {
         stage('Setup') {
@@ -57,6 +57,7 @@ pipeline {
                         returnStdout: true,
                         script: "set +x; scripts/broker_intention_open.sh scripts/intention-fb-configure.json"
                     )
+                    sh "scripts/broker_intention_action.sh start server-access"
                     env.VAULT_TOKEN = sh(
                         returnStdout: true,
                         script: "set +x; scripts/vault_token.sh"
@@ -69,12 +70,14 @@ pipeline {
                         returnStdout: true,
                         script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_PASS_FIELD} ${env.VAULT_CD_PATH}"
                     )
+                    sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault token revoke"
                 }
             }
         }
         stage('Status') {
             steps {
                 sh "scripts/${SERVER_OS.toLowerCase()}/fluentbit_status.sh"
+                sh "scripts/broker_intention_action.sh end server-access"
             }
         }
     }

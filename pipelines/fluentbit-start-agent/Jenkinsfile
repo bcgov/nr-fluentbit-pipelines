@@ -14,7 +14,7 @@ pipeline {
         BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
         FB_ROLE_ID = credentials('knox-vault-fluentbit-app-role-id')
-        BROKER_JWT = credentials('nr-broker-jwt')
+        NR_BROKER_JWT = credentials('nr-broker-jwt')
     }
     stages {
         stage('Setup') {
@@ -43,6 +43,7 @@ pipeline {
                         returnStdout: true,
                         script: "set +x; scripts/broker_intention_open.sh scripts/intention-fb-install.json"
                     )
+                    sh "scripts/broker_intention_action.sh start server-access"
                     env.VAULT_TOKEN = sh(
                         returnStdout: true,
                         script: "set +x; scripts/vault_token.sh"
@@ -55,6 +56,8 @@ pipeline {
                         returnStdout: true,
                         script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_PASS_FIELD} ${env.VAULT_CD_PATH}"
                     )
+                    sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault token revoke"
+                    sh "scripts/broker_intention_action.sh start package-provision"
                     env.WRAPPED_FB_SECRET_ID = sh(
                         returnStdout: true,
                         script: "set +x; scripts/vault_secret_id.sh"
@@ -65,6 +68,8 @@ pipeline {
         stage('Start fluent bit') {
             steps {
                 sh "scripts/${SERVER_OS.toLowerCase()}/start_fluentbit_agent.sh"
+                sh "scripts/broker_intention_action.sh end provision"
+                sh "scripts/broker_intention_action.sh end server-access"
             }
         }
     }
