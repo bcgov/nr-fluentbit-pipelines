@@ -91,29 +91,34 @@ pipeline {
         stage('Read Automation Queue') {
             steps {
                 script {
-                    // Read queue
-                    def automationOutput = sh (
-                        script: './workflow/bin/run automation-message',
-                        returnStdout: true
-                    )
-                    .substring(17)
-                    .trim()
-                    echo automationOutput
-                    def messageArr = jsonParse(automationOutput)
                     def agentMap = [:]
-                    messageArr.each {
-                        if (!agentMap[it.server + it.agent]) {
-                            def job = hudson.model.Hudson.instance.getItemByFullName("FLUENTBIT/fluentbit-start-agent")
-                            def params = []
-                            params += new StringParameterValue('fluentbitHost', it.server)
-                            params += new StringParameterValue('fluentbitAgent', it.agent)
-                            def paramsAction = new ParametersAction(params)
-                            def cause = new hudson.model.Cause.RemoteCause("https://apm.io.nrs.gov.bc.ca", "Automation")
-                            def causeAction = new hudson.model.CauseAction(cause)
+                    while (true) {
+                        // Read queue
+                        def automationOutput = sh (
+                            script: './workflow/bin/run automation-message',
+                            returnStdout: true
+                        )
+                        .substring(17)
+                        .trim()
+                        echo automationOutput
+                        def messageArr = jsonParse(automationOutput)
+                        if (messageArr.size == 0) {
+                            break;
+                        }
+                        messageArr.each {
+                            if (!agentMap[it.server + it.agent]) {
+                                def job = hudson.model.Hudson.instance.getItemByFullName("FLUENTBIT/fluentbit-start-agent")
+                                def params = []
+                                params += new StringParameterValue('fluentbitHost', it.server)
+                                params += new StringParameterValue('fluentbitAgent', it.agent)
+                                def paramsAction = new ParametersAction(params)
+                                def cause = new hudson.model.Cause.RemoteCause("https://apm.io.nrs.gov.bc.ca", "Automation")
+                                def causeAction = new hudson.model.CauseAction(cause)
 
-                            echo 'Starting: ' + it.server + ':' + it.agent
-                            hudson.model.Hudson.instance.queue.schedule(job, 0, causeAction, paramsAction)
-                            agentMap[it.server + it.agent] = true;
+                                echo 'Starting: ' + it.server + ':' + it.agent
+                                hudson.model.Hudson.instance.queue.schedule(job, 0, causeAction, paramsAction)
+                                agentMap[it.server + it.agent] = true;
+                            }
                         }
                     }
                 }
