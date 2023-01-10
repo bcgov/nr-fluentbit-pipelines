@@ -12,7 +12,7 @@ if [ "${#SERVER_CONFIGS[@]}" -gt 0 ]; then
         export VAULT_CD_USER_FIELD=$(cat $SERVER_CONFIG | jq -r '.vault_cd_user_field')
         export VAULT_CD_PASS_FIELD=$(cat $SERVER_CONFIG | jq -r '.vault_cd_pass_field')
         export VAULT_CD_PATH=$(cat $SERVER_CONFIG | jq -r '.vault_cd_path')
-        if [ "$VAULT_CD_USER_FIELD" == "" ] || [ "$VAULT_CD_PASS_FIELD" == "" ] || [ "$VAULT_CD_PATH" == "" ]; then
+        if [ "$VAULT_CD_USER_FIELD" == "null" ] || [ "$VAULT_CD_PASS_FIELD" == "null" ] || [ "$VAULT_CD_PATH" == "null" ]; then
             continue
         fi
         export CD_USER=$(VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=$VAULT_CD_USER_FIELD $VAULT_CD_PATH)
