@@ -10,8 +10,7 @@ pipeline {
         AGENT_ROOT = "/apps_ux/agents"
         BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
-        BASIC_HTTP_USER = "brokeruser"
-        BASIC_HTTP_PASSWORD = credentials('nr-broker-password')
+        NR_BROKER_JWT = credentials('nr-broker-jwt')
     }
     stages {
         stage('Setup') {
@@ -19,15 +18,6 @@ pipeline {
                 script {
                     commonModule = load "pipelines/common.groovy"
                     env.CAUSE_USER_ID = commonModule.getCauseUserId()
-                    env.SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
-                    if (env.SERVER_OS != "linux" && env.SERVER_OS != "windows") {
-                        currentBuild.result = 'ABORTED'
-                        error('Invalid server OS')
-                    }
-                    env.AGENT_ROOT = "${env.SERVER_OS == "linux" ? "/apps_ux/agents" : "E:/apps_nt/agents"}"
-                    env.VAULT_CD_USER_FIELD = commonModule.getVaultCdUserField("${params.fluentbitHost}")
-                    env.VAULT_CD_PASS_FIELD = commonModule.getVaultCdPassField("${params.fluentbitHost}")
-                    env.VAULT_CD_PATH = commonModule.getVaultCdPath("${params.fluentbitHost}")
                 }
             }
         }
@@ -39,7 +29,10 @@ pipeline {
                     doGenerateSubmoduleConfigurations: false,
                     extensions: [
                         [$class: 'RelativeTargetDirectory', relativeTargetDir: 'fb'],
-                        [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[[$class:'SparseCheckoutPath', path: "config/server"], [$class:'SparseCheckoutPath', path: "config/base.json"]]]
+                        [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[
+                            [$class:'SparseCheckoutPath', path: "config/server"],
+                            [$class:'SparseCheckoutPath', path: "config/base.json"]
+                        ]]
                     ],
                     submoduleCfg: [],
                     userRemoteConfigs: [
@@ -58,24 +51,19 @@ pipeline {
                         returnStdout: true,
                         script: "set +x; scripts/broker_intention_open.sh scripts/intention-fb-configure.json"
                     )
+                    sh "scripts/broker_intention_action.sh start login"
                     env.VAULT_TOKEN = sh(
                         returnStdout: true,
                         script: "set +x; scripts/vault_token.sh"
-                    )
-                    env.CD_USER = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_USER_FIELD} ${env.VAULT_CD_PATH}"
-                    )
-                    env.CD_PASS = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_PASS_FIELD} ${env.VAULT_CD_PATH}"
                     )
                 }
             }
         }
         stage('Status') {
             steps {
-                sh "scripts/${SERVER_OS.toLowerCase()}/fluentbit_status.sh"
+                sh "scripts/fluentbit_status.sh"
+                sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault token revoke -self"
+                sh "scripts/broker_intention_action.sh end login"
             }
         }
     }

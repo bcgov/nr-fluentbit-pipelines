@@ -8,10 +8,20 @@ if [ "${#SERVER_CONFIGS[@]}" -gt 0 ]; then
     for SERVER_CONFIG in ${SERVER_CONFIGS[@]} ; do
         export HOST=$(cat $SERVER_CONFIG | jq -r '.address')
         export FB_RELEASE=$(cat $SERVER_CONFIG | jq -r '.fluentBitRelease')
+        export SERVER_OS=$(cat $SERVER_CONFIG | jq -r '.os')
+        export VAULT_CD_USER_FIELD=$(cat $SERVER_CONFIG | jq -r '.vault_cd_user_field')
+        export VAULT_CD_PASS_FIELD=$(cat $SERVER_CONFIG | jq -r '.vault_cd_pass_field')
+        export VAULT_CD_PATH=$(cat $SERVER_CONFIG | jq -r '.vault_cd_path')
+        if [ "$VAULT_CD_USER_FIELD" == "null" ] || [ "$VAULT_CD_PASS_FIELD" == "null" ] || [ "$VAULT_CD_PATH" == "null" ]; then
+            continue
+        fi
+        export CD_USER=$(VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=$VAULT_CD_USER_FIELD $VAULT_CD_PATH)
+        export CD_PASS=$(VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=$VAULT_CD_PASS_FIELD $VAULT_CD_PATH)
+
         if [ "$FB_RELEASE" == "null" ]; then
             export FB_RELEASE=$BASE_FB_RELEASE
         fi
-        if [ "$HOST" != "localhost" ]; then
+        if [ "$HOST" != "localhost" ] && [ "$SERVER_OS" == "linux" ] ; then
             echo "$HOST - target: $FB_RELEASE"
             sshpass -p $CD_PASS ssh -q $CD_USER@$HOST /bin/bash <<EOF
 if [ -r $AGENT_ROOT ]; then
