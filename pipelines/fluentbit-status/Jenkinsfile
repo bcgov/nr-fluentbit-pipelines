@@ -51,7 +51,7 @@ pipeline {
                         returnStdout: true,
                         script: "set +x; scripts/broker_intention_open.sh scripts/intention-fb-configure.json"
                     )
-                    sh "scripts/broker_intention_action.sh start server-access"
+                    sh "scripts/broker_intention_action.sh start login"
                     env.VAULT_TOKEN = sh(
                         returnStdout: true,
                         script: "set +x; scripts/vault_token.sh"
@@ -63,7 +63,7 @@ pipeline {
             steps {
                 sh "scripts/fluentbit_status.sh"
                 sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault token revoke -self"
-                sh "scripts/broker_intention_action.sh end server-access"
+                sh "scripts/broker_intention_action.sh end login"
             }
         }
     }

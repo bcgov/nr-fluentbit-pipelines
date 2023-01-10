@@ -42,7 +42,7 @@ pipeline {
                         returnStdout: true,
                         script: "set +x; scripts/broker_intention_open.sh scripts/intention-fb-configure.json"
                     )
-                    sh "scripts/broker_intention_action.sh start server-access"
+                    sh "scripts/broker_intention_action.sh start login"
                     env.VAULT_TOKEN = sh(
                         returnStdout: true,
                         script: "set +x; scripts/vault_token.sh"
@@ -62,7 +62,7 @@ pipeline {
         stage('Reload logs') {
             steps {
                 sh "scripts/${SERVER_OS.toLowerCase()}/reload_logs.sh"
-                sh "scripts/broker_intention_action.sh end server-access"
+                sh "scripts/broker_intention_action.sh end login"
             }
         }
     }
