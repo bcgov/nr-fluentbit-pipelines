@@ -62,7 +62,7 @@ pipeline {
         stage('Status') {
             steps {
                 sh "scripts/fluentbit_status.sh"
-                sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault token revoke"
+                sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault token revoke -self"
                 sh "scripts/broker_intention_action.sh end server-access"
             }
         }

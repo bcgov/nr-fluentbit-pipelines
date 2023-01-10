@@ -80,7 +80,7 @@ pipeline {
                         returnStdout: true,
                         script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault kv get -field=aws_assume_role apps/prod/jenkins/aws-automation"
                     )
-                    sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault token revoke"
+                    sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault token revoke -self"
                 }
             }
         }

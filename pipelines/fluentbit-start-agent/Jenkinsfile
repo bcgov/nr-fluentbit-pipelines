@@ -56,7 +56,7 @@ pipeline {
                         returnStdout: true,
                         script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_PASS_FIELD} ${env.VAULT_CD_PATH}"
                     )
-                    sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault token revoke"
+                    sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault token revoke -self"
                     sh "scripts/broker_intention_action.sh start package-provision"
                     env.WRAPPED_FB_SECRET_ID = sh(
                         returnStdout: true,
