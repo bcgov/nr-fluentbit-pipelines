@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set +x
 
-sshpass -p $CD_PASS ssh -q $CD_USER@$HOST powershell.exe -Command -<<EOF
+sshpass -p $CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $CD_USER@$HOST powershell.exe -Command -<<EOF
 echo "Temp directory: $TMP_DIR"
 \$AGENTS = (Get-ChildItem -Directory -Path "$TMP_DIR/output/fluent-bit.*" -Name)
 

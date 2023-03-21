@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set +x
 
-sshpass -p $CD_PASS ssh -q $CD_USER@$HOST powershell.exe -Command -<<EOF
+sshpass -p $CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $CD_USER@$HOST powershell.exe -Command -<<EOF
 # remove previously deployed WinSW services and fluent bit configuration
 \$AGENTS = (Get-ChildItem -Directory -Path $AGENT_ROOT/fluent-bit.* -Name)
 

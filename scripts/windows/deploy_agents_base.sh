@@ -6,7 +6,7 @@ set +x
 # https://unix.stackexchange.com/questions/250740/replace-string-after-last-dot-in-bash
 FLUENTBIT_RELEASE_MAJOR_MINOR="${FLUENTBIT_RELEASE%.*}"
 
-sshpass -p $CD_PASS ssh -q $CD_USER@$HOST powershell.exe -Command -<<EOF
+sshpass -p $CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $CD_USER@$HOST powershell.exe -Command -<<EOF
 echo "Temp directory: $TMP_DIR"
 # create bin directories and agent root
 New-Item -ItemType "directory" -Path "$BIN_DIR/vault" -Force

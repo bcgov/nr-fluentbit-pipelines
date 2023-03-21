@@ -1,15 +1,11 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set +x
 
 SERVER_IP=$(dig +short $HOST | tail -n1)
 
-sshpass -p $CD_PASS ssh -q $CD_USER@$HOST /bin/bash <<EOF
+sshpass -p $CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $CD_USER@$HOST /bin/bash <<EOF
 # become run_user
-if [ "$PCI" = "true" ]; then
-    /sw_ux/bin/sshpass -p $CD_PASS sudo -su $RUN_USER
-else
-    sudo -su $RUN_USER
-fi
+sudo -su $RUN_USER
 
 # extract interface name
 METRIC_HOST_NETWORK_INTERFACE_NAME=\$(ip addr | awk '

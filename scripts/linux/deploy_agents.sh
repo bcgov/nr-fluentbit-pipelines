@@ -1,12 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set +x
-sshpass -p $CD_PASS ssh -q $CD_USER@$HOST /bin/bash <<EOF
+sshpass -p $CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $CD_USER@$HOST /bin/bash <<EOF
 # become install_user
-if [ "$PCI" = "true" ]; then
-    /sw_ux/bin/sshpass -p $CD_PASS sudo -su $INSTALL_USER
-else
-    sudo -su $INSTALL_USER
-fi
+sudo -su $INSTALL_USER
 
 echo "Temp directory: $TMP_DIR"
 # create base and agent root
@@ -17,16 +13,16 @@ chmod 775 $AGENT_ROOT
 
 # download dependencies
 if [ -z "$HTTP_PROXY" ]; then
-    /bin/curl -sSL "https://releases.hashicorp.com/vault/${VAULT_RELEASE}/vault_${VAULT_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/vault_${VAULT_RELEASE}_linux_amd64.zip"
-    /bin/curl -sSL "https://releases.hashicorp.com/envconsul/${ENVCONSUL_RELEASE}/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip"
-    /bin/curl -sSL "https://github.com/stedolan/jq/releases/download/jq-${JQ_RELEASE}/jq-linux64" -o $BIN_DIR/jq
+    curl -sSL "https://releases.hashicorp.com/vault/${VAULT_RELEASE}/vault_${VAULT_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/vault_${VAULT_RELEASE}_linux_amd64.zip"
+    curl -sSL "https://releases.hashicorp.com/envconsul/${ENVCONSUL_RELEASE}/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip"
+    curl -sSL "https://github.com/stedolan/jq/releases/download/jq-${JQ_RELEASE}/jq-linux64" -o $BIN_DIR/jq
 else
-    /bin/curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/vault/${VAULT_RELEASE}/vault_${VAULT_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/vault_${VAULT_RELEASE}_linux_amd64.zip"
-    /bin/curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/envconsul/${ENVCONSUL_RELEASE}/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip"
-    /bin/curl -x $HTTP_PROXY -sSL "https://github.com/stedolan/jq/releases/download/jq-${JQ_RELEASE}/jq-linux64" -o $BIN_DIR/jq
+    curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/vault/${VAULT_RELEASE}/vault_${VAULT_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/vault_${VAULT_RELEASE}_linux_amd64.zip"
+    curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/envconsul/${ENVCONSUL_RELEASE}/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip"
+    curl -x $HTTP_PROXY -sSL "https://github.com/stedolan/jq/releases/download/jq-${JQ_RELEASE}/jq-linux64" -o $BIN_DIR/jq
 fi
-/bin/curl -u $CI_USER:$CI_PASS -sSL "https://bwa.nrs.gov.bc.ca/int/artifactory/ext-binaries-local/fluent/fluent-bit/${FLUENTBIT_RELEASE}/fluent-bit-${OS_VARIANT}.tar.gz" -o $TMP_DIR/bin/fluent-bit.tar.gz
-/bin/curl -u $CI_USER:$CI_PASS -sSL "https://bwa.nrs.gov.bc.ca/int/artifactory/ext-binaries-local/sqlite/${SQLITE_RELEASE}/sqlite.tar.gz" -o $TMP_DIR/bin/sqlite.tar.gz
+curl -u $CI_USER:$CI_PASS -sSL "https://bwa.nrs.gov.bc.ca/int/artifactory/ext-binaries-local/fluent/fluent-bit/${FLUENTBIT_RELEASE}/fluent-bit-${OS_VARIANT}.tar.gz" -o $TMP_DIR/bin/fluent-bit.tar.gz
+curl -u $CI_USER:$CI_PASS -sSL "https://bwa.nrs.gov.bc.ca/int/artifactory/ext-binaries-local/sqlite/${SQLITE_RELEASE}/sqlite.tar.gz" -o $TMP_DIR/bin/sqlite.tar.gz
 # set jq as executable
 chmod 755 $BIN_DIR/jq
 # extract bin and lib
@@ -74,11 +70,7 @@ done
 exit
 
 # become run_user
-if [ "$PCI" = "true" ]; then
-    /sw_ux/bin/sshpass -p $CD_PASS sudo -su $RUN_USER
-else
-    sudo -su $RUN_USER
-fi
+sudo -su $RUN_USER
 # Trigger adding
 /sw_ux/s6/bin/s6-svscanctl -an $S6_SERVICE_HOME
 # deploy log rotation
@@ -98,11 +90,7 @@ exit
 
 # clean up
 # become install_user
-if [ "$PCI" = "true" ]; then
-    /sw_ux/bin/sshpass -p $CD_PASS sudo -su $INSTALL_USER
-else
-    sudo -su $INSTALL_USER
-fi
+sudo -su $INSTALL_USER
 rm -rf $TMP_DIR
 exit
 EOF

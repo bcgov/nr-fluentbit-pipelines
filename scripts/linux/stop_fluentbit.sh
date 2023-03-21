@@ -1,12 +1,7 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set +x
-sshpass -p $CD_PASS ssh -q $CD_USER@$HOST /bin/bash <<EOF
-# become run_user
-if [ "$PCI" = "true" ]; then
-    /sw_ux/bin/sshpass -p $CD_PASS sudo -su $RUN_USER
-else
-    sudo -su $RUN_USER
-fi
+sshpass -p $CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $CD_USER@$HOST /bin/bash <<EOF
+sudo -su $RUN_USER
 
 AGENTS=\$(ls -d $AGENT_ROOT/fluent-bit.* 2>/dev/null)
 if [ "\${#AGENTS[@]}" -gt 0 ]; then

@@ -1,13 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set +x
-sshpass -p $CD_PASS ssh -q $CD_USER@$HOST /bin/bash <<EOF
+sshpass -p $CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $CD_USER@$HOST /bin/bash <<EOF
 # remove previously deployed s6 event/supervise directories and .env file
-# become run_user
-if [ "$PCI" = "true" ]; then
-    /sw_ux/bin/sshpass -p $CD_PASS sudo -su $RUN_USER
-else
-    sudo -su $RUN_USER
-fi
+sudo -su $RUN_USER
 AGENTS=\$(ls -d $AGENT_ROOT/fluent-bit.* 2>/dev/null)
 if [ "\${#AGENTS[@]}" -gt 0 ]; then
     for agent in \${AGENTS[@]} ; do
@@ -28,12 +23,7 @@ fi
 exit
 
 # remove previously deployed s6 service directories
-# become install_user
-if [ "$PCI" = "true" ]; then
-    /sw_ux/bin/sshpass -p $CD_PASS sudo -su $INSTALL_USER
-else
-    sudo -su $INSTALL_USER
-fi
+sudo -su $INSTALL_USER
 AGENTS=\$(ls -d $AGENT_ROOT/fluent-bit.* 2>/dev/null)
 if [ "\${#AGENTS[@]}" -gt 0 ]; then
     for agent in \${AGENTS[@]} ; do

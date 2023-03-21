@@ -2,7 +2,7 @@
 
 # Workaround because <() does not work
 TEMP_FILE=$(mktemp)-isss-jenkins-broker
-cat $1 | /sw_ux/bin/jq "\
+cat $1 | jq "\
     .event.url=\"$BUILD_URL\" | \
     .user.id=\"$CAUSE_USER_ID\" | \
     (.actions[] | select(.id == \"install\") .service.version) |= \"$FLUENTBIT_RELEASE\" \
