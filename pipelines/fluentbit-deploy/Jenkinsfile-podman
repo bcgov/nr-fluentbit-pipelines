@@ -5,7 +5,6 @@ pipeline {
         label 'podman'
     }
     environment {
-        PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
         PIPELINE_ARTIFACTORY_CREDS = credentials('ci-user')
         FUNBUCKS_OUTPUT = "fb/output"
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
