@@ -28,12 +28,13 @@ pipeline {
         stage('Setup') {
             environment {
                 HTTP_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
+                FB_GIT_BRANCH = "${params.fbGitBranch}"
             }            
             steps {
                 sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
                 sh '''
-                    HTTP_PROXY=\$HTTP_PROXY podman run --rm --security-opt label=disable -v \$(pwd)/fb:/git \
-                    docker.io/alpine/git clone https://github.com/bcgov-nr/nr-funbucks.git .
+                    HTTP_PROXY=\$HTTP_PROXY podman run --rm --security-opt label=disable -v \$(pwd)/fb:/git -e "FB_GIT_BRANCH=${FB_GIT_BRANCH}" \
+                    docker.io/alpine/git clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .
                 '''
                 sh 'mkdir $(pwd)/fb/output'
                 script {
