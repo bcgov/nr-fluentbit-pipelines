@@ -1,87 +1,87 @@
 #!/usr/bin/env bash
 set +x
-sshpass -p $CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $CD_USER@$HOST /bin/bash <<EOF
-# become install_user
-sudo -su $INSTALL_USER
+sshpass -p $FB_CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $FB_CD_USER@$FB_HOST /bin/bash <<EOF
+# become FB_INSTALL_USER
+sudo -su $FB_INSTALL_USER
 
-echo "Temp directory: $TMP_DIR"
+echo "Temp directory: $FB_TMP_DIR"
 # create base and agent root
-mkdir -p $BIN_DIR
-mkdir -p $AGENT_ROOT
-chmod 755 $BIN_DIR
-chmod 775 $AGENT_ROOT
+mkdir -p $FB_BIN_DIR
+mkdir -p $FB_AGENT_ROOT
+chmod 755 $FB_BIN_DIR
+chmod 775 $FB_AGENT_ROOT
 
 # download dependencies
 if [ -z "$HTTP_PROXY" ]; then
-    curl -sSL "https://releases.hashicorp.com/vault/${VAULT_RELEASE}/vault_${VAULT_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/vault_${VAULT_RELEASE}_linux_amd64.zip"
-    curl -sSL "https://releases.hashicorp.com/envconsul/${ENVCONSUL_RELEASE}/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip"
-    curl -sSL "https://github.com/stedolan/jq/releases/download/jq-${JQ_RELEASE}/jq-linux64" -o $BIN_DIR/jq
+    curl -sSL "https://releases.hashicorp.com/vault/${FB_VAULT_RELEASE}/vault_${FB_VAULT_RELEASE}_linux_amd64.zip" -o "$FB_TMP_DIR/bin/vault_${FB_VAULT_RELEASE}_linux_amd64.zip"
+    curl -sSL "https://releases.hashicorp.com/envconsul/${FB_ENVCONSUL_RELEASE}/envconsul_${FB_ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$FB_TMP_DIR/bin/envconsul_${FB_ENVCONSUL_RELEASE}_linux_amd64.zip"
+    curl -sSL "https://github.com/stedolan/jq/releases/download/jq-${FB_JQ_RELEASE}/jq-linux64" -o $FB_BIN_DIR/jq
 else
-    curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/vault/${VAULT_RELEASE}/vault_${VAULT_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/vault_${VAULT_RELEASE}_linux_amd64.zip"
-    curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/envconsul/${ENVCONSUL_RELEASE}/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip"
-    curl -x $HTTP_PROXY -sSL "https://github.com/stedolan/jq/releases/download/jq-${JQ_RELEASE}/jq-linux64" -o $BIN_DIR/jq
+    curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/vault/${FB_VAULT_RELEASE}/vault_${FB_VAULT_RELEASE}_linux_amd64.zip" -o "$FB_TMP_DIR/bin/vault_${FB_VAULT_RELEASE}_linux_amd64.zip"
+    curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/envconsul/${FB_ENVCONSUL_RELEASE}/envconsul_${FB_ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$FB_TMP_DIR/bin/envconsul_${FB_ENVCONSUL_RELEASE}_linux_amd64.zip"
+    curl -x $HTTP_PROXY -sSL "https://github.com/stedolan/jq/releases/download/jq-${FB_JQ_RELEASE}/jq-linux64" -o $FB_BIN_DIR/jq
 fi
-curl -u $CI_USER:$CI_PASS -sSL "https://bwa.nrs.gov.bc.ca/int/artifactory/ext-binaries-local/fluent/fluent-bit/${FLUENTBIT_RELEASE}/fluent-bit-${OS_VARIANT}.tar.gz" -o $TMP_DIR/bin/fluent-bit.tar.gz
-curl -u $CI_USER:$CI_PASS -sSL "https://bwa.nrs.gov.bc.ca/int/artifactory/ext-binaries-local/sqlite/${SQLITE_RELEASE}/sqlite.tar.gz" -o $TMP_DIR/bin/sqlite.tar.gz
+curl -u $FB_CI_USER:$FB_CI_PASS -sSL "https://bwa.nrs.gov.bc.ca/int/artifactory/ext-binaries-local/fluent/fluent-bit/${FB_FLUENTBIT_RELEASE}/fluent-bit-${FB_OS_VARIANT}.tar.gz" -o $FB_TMP_DIR/bin/fluent-bit.tar.gz
+curl -u $FB_CI_USER:$FB_CI_PASS -sSL "https://bwa.nrs.gov.bc.ca/int/artifactory/ext-binaries-local/sqlite/${FB_SQLITE_RELEASE}/sqlite.tar.gz" -o $FB_TMP_DIR/bin/sqlite.tar.gz
 # set jq as executable
-chmod 755 $BIN_DIR/jq
+chmod 755 $FB_BIN_DIR/jq
 # extract bin and lib
-cd $TMP_DIR/bin
-tar -zxvf $TMP_DIR/bin/fluent-bit.tar.gz --strip-components=1
-tar -zxvf $TMP_DIR/bin/sqlite.tar.gz --strip-components=1 -C $BIN_DIR
+cd $FB_TMP_DIR/bin
+tar -zxvf $FB_TMP_DIR/bin/fluent-bit.tar.gz --strip-components=1
+tar -zxvf $FB_TMP_DIR/bin/sqlite.tar.gz --strip-components=1 -C $FB_BIN_DIR
 # set sqlite3 as executable
-chmod 755 $BIN_DIR/sqlite3
+chmod 755 $FB_BIN_DIR/sqlite3
 # unzip vault and envconsul
-unzip -o $TMP_DIR/bin/vault_${VAULT_RELEASE}_linux_amd64.zip -d $BIN_DIR
-unzip -o $TMP_DIR/bin/envconsul_${ENVCONSUL_RELEASE}_linux_amd64.zip -d $BIN_DIR
+unzip -o $FB_TMP_DIR/bin/vault_${FB_VAULT_RELEASE}_linux_amd64.zip -d $FB_BIN_DIR
+unzip -o $FB_TMP_DIR/bin/envconsul_${FB_ENVCONSUL_RELEASE}_linux_amd64.zip -d $FB_BIN_DIR
 
 # deploy config and exec
-cd $TMP_DIR
+cd $FB_TMP_DIR
 mkdir -p /apps_data/agents/fluent-bit
 chmod 775 /apps_data/agents
 chmod 775 /apps_data/agents/fluent-bit
 AGENTS=\$(ls -d output/fluent-bit.*)
 for agent in \${AGENTS[@]} ; do
     AGENT=\$(basename \$agent)
-    AGENT_HOME=$AGENT_ROOT/\$AGENT
+    AGENT_HOME=$FB_AGENT_ROOT/\$AGENT
     # create agent and service directories
     mkdir -p \$AGENT_HOME/{bin,conf,lib}
     chmod 775 \$AGENT_HOME
     chmod 775 \$AGENT_HOME/{bin,conf,lib}
-    mkdir -p $S6_SERVICE_HOME/\$AGENT
-    chmod 775 $S6_SERVICE_HOME/\$AGENT
+    mkdir -p $FB_S6_SERVICE_HOME/\$AGENT
+    chmod 775 $FB_S6_SERVICE_HOME/\$AGENT
     # Copy files
-    cp $TMP_DIR/bin/fluent-bit \$AGENT_HOME/bin
-    cp $TMP_DIR/bin/lib* \$AGENT_HOME/lib
+    cp $FB_TMP_DIR/bin/fluent-bit \$AGENT_HOME/bin
+    cp $FB_TMP_DIR/bin/lib* \$AGENT_HOME/lib
     chmod 775 \$AGENT_HOME/lib/*
-    cp -R $TMP_DIR/output/\$AGENT/* \$AGENT_HOME/conf
-    sed -e "s,\\\$HTTP_PROXY,$HTTP_PROXY,g" -e "s,{{ apm_agent_home }},\$AGENT_HOME,g" $TMP_DIR/files/fluent-bit.hcl > \$AGENT_HOME/conf/fluent-bit.hcl
-    cp $TMP_DIR/files/fluentbitw \$AGENT_HOME/bin
-    cp $TMP_DIR/files/.env \$AGENT_HOME/bin/.env.template
-    cp $TMP_DIR/files/down-signal $S6_SERVICE_HOME\/\$AGENT
-    chmod 664 $S6_SERVICE_HOME\/\$AGENT/down-signal
-    sed -e "s,\\\$S6_SERVICE_DIR,$S6_SERVICE_HOME\/\$AGENT,g;s/AGENT_NAME=.*/AGENT_NAME=\""\$AGENT"\"/g" $TMP_DIR/files/.env > \$AGENT_HOME/bin/.env.template
+    cp -R $FB_TMP_DIR/output/\$AGENT/* \$AGENT_HOME/conf
+    sed -e "s,\\\$HTTP_PROXY,$HTTP_PROXY,g" -e "s,{{ apm_agent_home }},\$AGENT_HOME,g" $FB_TMP_DIR/files/fluent-bit.hcl > \$AGENT_HOME/conf/fluent-bit.hcl
+    cp $FB_TMP_DIR/files/fluentbitw \$AGENT_HOME/bin
+    cp $FB_TMP_DIR/files/.env \$AGENT_HOME/bin/.env.template
+    cp $FB_TMP_DIR/files/down-signal $FB_S6_SERVICE_HOME\/\$AGENT
+    chmod 664 $FB_S6_SERVICE_HOME\/\$AGENT/down-signal
+    sed -e "s,\\\$S6_SERVICE_DIR,$FB_S6_SERVICE_HOME\/\$AGENT,g;s/AGENT_NAME=.*/AGENT_NAME=\""\$AGENT"\"/g" $FB_TMP_DIR/files/.env > \$AGENT_HOME/bin/.env.template
 
-    ln -sfn \$AGENT_HOME/bin/fluentbitw $S6_SERVICE_HOME/\$AGENT/run
+    ln -sfn \$AGENT_HOME/bin/fluentbitw $FB_S6_SERVICE_HOME/\$AGENT/run
     chmod 664 \$AGENT_HOME/bin/.env.template
     chmod 755 \$AGENT_HOME/bin/fluent-bit \$AGENT_HOME/bin/fluentbitw
     chmod -R a+r,a+X \$AGENT_HOME/conf
 done
 exit
 
-# become run_user
-sudo -su $RUN_USER
+# become FB_RUN_USER
+sudo -su $FB_RUN_USER
 # Trigger adding
-/sw_ux/s6/bin/s6-svscanctl -an $S6_SERVICE_HOME
+/sw_ux/s6/bin/s6-svscanctl -an $FB_S6_SERVICE_HOME
 # deploy log rotation
-cd $TMP_DIR
+cd $FB_TMP_DIR
 mkdir -p /apps_ux/logs/agents/fluent-bit
 chmod 775 /apps_ux/logs/agents
 chmod 775 /apps_ux/logs/agents/fluent-bit
 AGENTS=\$(ls -d output/fluent-bit.*)
 for agent in \${AGENTS[@]} ; do
     AGENT=\$(basename \$agent)
-    sed "s,{{ apm_agent_log }},/apps_ux/logs/agents/fluent-bit/\$AGENT.log,g" $TMP_DIR/files/fluent-bit-logrotate.conf > /apps_ux/wwwsvr/\$AGENT-logrotate.conf
+    sed "s,{{ apm_agent_log }},/apps_ux/logs/agents/fluent-bit/\$AGENT.log,g" $FB_TMP_DIR/files/fluent-bit-logrotate.conf > /apps_ux/wwwsvr/\$AGENT-logrotate.conf
     croncmd="/sbin/logrotate /apps_ux/wwwsvr/\$AGENT-logrotate.conf --state /apps_ux/wwwsvr/\$AGENT-logrotate-state --verbose"
     cronjob="59 23 * * * \$croncmd"
     ( crontab -l | grep -v -F "\$croncmd" ; echo "\$cronjob" ) | crontab -
@@ -89,8 +89,8 @@ done
 exit
 
 # clean up
-# become install_user
-sudo -su $INSTALL_USER
-rm -rf $TMP_DIR
+# become FB_INSTALL_USER
+sudo -su $FB_INSTALL_USER
+rm -rf $FB_TMP_DIR
 exit
 EOF

@@ -7,37 +7,37 @@ pipeline {
     environment {
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
         PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
-        INSTALL_USER="wwwadm"
-        RUN_USER="wwwsvr"
-        S6_SERVICE_HOME = "/apps_ux/s6_services"
-        BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
-        CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
-        NR_BROKER_JWT = credentials('nr-broker-jwt')
+        FB_INSTALL_USER="wwwadm"
+        FB_RUN_USER="wwwsvr"
+        FB_S6_SERVICE_HOME = "/apps_ux/s6_services"
+        FB_BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
+        FB_CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
+        FB_NR_BROKER_JWT = credentials('nr-broker-jwt')
     }
     stages {
         stage('Setup') {
             steps {
                 script {
                     commonModule = load "pipelines/common.groovy"
-                    env.CAUSE_USER_ID = commonModule.getCauseUserId()
-                    env.HOST = commonModule.getHost("${params.fluentbitHost}")
-                    env.SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
-                    if (env.SERVER_OS != "linux" && env.SERVER_OS != "windows") {
+                    env.FB_CAUSE_USER_ID = commonModule.getCauseUserId()
+                    env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")
+                    env.FB_SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
+                    if (env.FB_SERVER_OS != "linux" && env.FB_SERVER_OS != "windows") {
                         currentBuild.result = 'ABORTED'
                         error('Invalid server OS')
                     }
-                    env.BIN_DIR = "${env.SERVER_OS == "linux" ? "/sw_ux/bin" : "E:/sw_nt"}"
-                    env.AGENT_ROOT = "${env.SERVER_OS == "linux" ? "/apps_ux/agents" : "E:/apps_nt/agents"}"
-                    env.VAULT_CD_USER_FIELD = commonModule.getVaultCdUserField("${params.fluentbitHost}")
-                    env.VAULT_CD_PASS_FIELD = commonModule.getVaultCdPassField("${params.fluentbitHost}")
-                    env.VAULT_CD_PATH = commonModule.getVaultCdPath("${params.fluentbitHost}")
+                    env.FB_BIN_DIR = "${env.FB_SERVER_OS == "linux" ? "/sw_ux/bin" : "E:/sw_nt"}"
+                    env.FB_AGENT_ROOT = "${env.FB_SERVER_OS == "linux" ? "/apps_ux/agents" : "E:/apps_nt/agents"}"
+                    env.FB_VAULT_CD_USER_FIELD = commonModule.getVaultCdUserField("${params.fluentbitHost}")
+                    env.FB_VAULT_CD_PASS_FIELD = commonModule.getVaultCdPassField("${params.fluentbitHost}")
+                    env.FB_VAULT_CD_PATH = commonModule.getVaultCdPath("${params.fluentbitHost}")
                 }
             }
         }
         stage('Get credentials') {
             steps {
                 script {
-                    env.INTENTION_JSON = sh(
+                    env.FB_INTENTION_JSON = sh(
                         returnStdout: true,
                         script: "set +x; scripts/broker_intention_open.sh scripts/intention-fb-configure.json"
                     )
@@ -46,13 +46,13 @@ pipeline {
                         returnStdout: true,
                         script: "set +x; scripts/vault_token.sh scripts/config-jenkins.json"
                     )
-                    env.CD_USER = sh(
+                    env.FB_CD_USER = sh(
                         returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_USER_FIELD} ${env.VAULT_CD_PATH}"
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.FB_VAULT_CD_USER_FIELD} ${env.FB_VAULT_CD_PATH}"
                     )
-                    env.CD_PASS = sh(
+                    env.FB_CD_PASS = sh(
                         returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_PASS_FIELD} ${env.VAULT_CD_PATH}"
+                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.FB_VAULT_CD_PASS_FIELD} ${env.FB_VAULT_CD_PATH}"
                     )
                     sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault token revoke -self"
                 }
@@ -60,7 +60,7 @@ pipeline {
         }
         stage('Stop fluent bit') {
             steps {
-                sh "scripts/${SERVER_OS.toLowerCase()}/stop_fluentbit.sh"
+                sh "scripts/${FB_SERVER_OS.toLowerCase()}/stop_fluentbit.sh"
                 sh "scripts/broker_intention_action.sh end login"
             }
         }

@@ -7,17 +7,17 @@ pipeline {
     environment {
         PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        AGENT_ROOT = "/apps_ux/agents"
-        BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
-        CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
-        NR_BROKER_JWT = credentials('nr-broker-jwt')
+        FB_AGENT_ROOT = "/apps_ux/agents"
+        FB_BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
+        FB_CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
+        FB_NR_BROKER_JWT = credentials('nr-broker-jwt')
     }
     stages {
         stage('Setup') {
             steps {
                 script {
                     commonModule = load "pipelines/common.groovy"
-                    env.CAUSE_USER_ID = commonModule.getCauseUserId()
+                    env.FB_CAUSE_USER_ID = commonModule.getCauseUserId()
                 }
             }
         }
@@ -47,7 +47,7 @@ pipeline {
         stage('Get credentials') {
             steps {
                 script {
-                    env.INTENTION_JSON = sh(
+                    env.FB_INTENTION_JSON = sh(
                         returnStdout: true,
                         script: "set +x; scripts/broker_intention_open.sh scripts/intention-fb-configure.json"
                     )

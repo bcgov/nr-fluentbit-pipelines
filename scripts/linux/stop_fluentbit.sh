@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set +x
-sshpass -p $CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $CD_USER@$HOST /bin/bash <<EOF
-sudo -su $RUN_USER
+sshpass -p $FB_CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $FB_CD_USER@$FB_HOST /bin/bash <<EOF
+sudo -su $FB_RUN_USER
 
-AGENTS=\$(ls -d $AGENT_ROOT/fluent-bit.* 2>/dev/null)
+AGENTS=\$(ls -d $FB_AGENT_ROOT/fluent-bit.* 2>/dev/null)
 if [ "\${#AGENTS[@]}" -gt 0 ]; then
     for agent in \${AGENTS[@]}; do
         AGENT=\$(basename \$agent)
-        AGENT_HOME=$AGENT_ROOT/\$AGENT
-        if [ -r $S6_SERVICE_HOME/\$AGENT/run ]; then
-            /sw_ux/s6/bin/s6-svc -d $S6_SERVICE_HOME/\$AGENT/
+        AGENT_HOME=$FB_AGENT_ROOT/\$AGENT
+        if [ -r $FB_S6_SERVICE_HOME/\$AGENT/run ]; then
+            /sw_ux/s6/bin/s6-svc -d $FB_S6_SERVICE_HOME/\$AGENT/
         fi
         if [ -r \$AGENT_HOME/bin/.env ]; then
             echo "Attempting to revoke previous token..."
