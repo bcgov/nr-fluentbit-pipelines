@@ -1,14 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set +x
-sshpass -p $FB_CD_PASS ssh -q $FB_CD_USER@$FB_HOST /bin/bash <<EOF
+sshpass -p $FB_CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $FB_CD_USER@$FB_HOST /bin/bash <<EOF
 # become FB_RUN_USER
-if [ "$PCI" = "true" ]; then
-    /sw_ux/bin/sshpass -p $FB_CD_PASS sudo -su $FB_RUN_USER
-else
-    sudo -su $FB_RUN_USER
-fi
+sudo -su $FB_RUN_USER
 
-/sw_ux/bin/sqlite3 $FLUENTBIT_DB 'update in_tail_files set offset=0 where name like "$TAIL_FILES_LIKE"'
+/sw_ux/bin/sqlite3 $FB_FLUENTBIT_DB 'update in_tail_files set offset=0 where name like "$FB_TAIL_FILES_LIKE"'
 
 AGENTS=\$(ls -d $FB_AGENT_ROOT/fluent-bit.* 2>/dev/null)
 if [ "\${#AGENTS[@]}" -gt 0 ]; then

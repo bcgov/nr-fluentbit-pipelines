@@ -2,46 +2,35 @@ def commonModule = [:]
 
 pipeline {
     agent {
-        label 'master'
+        label 'podman'
     }
     environment {
-        PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
         FB_AGENT_ROOT = "/apps_ux/agents"
         FB_BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
-        FB_CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
+        FB_CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
         FB_NR_BROKER_JWT = credentials('nr-broker-jwt')
+        FB_BUILD_URL = "${env.BUILD_URL}"
+        ARTIFACTORY_URL = "artifacts.developer.gov.bc.ca/cc20-gen-docker-local"
+        IMAGE_TAG = "${params.imageTag}"
     }
     stages {
         stage('Setup') {
+            environment {
+                HTTP_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
+                FB_GIT_BRANCH = "${params.fbGitBranch}"                
+            }
             steps {
+                sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
+                sh '''
+                    HTTP_PROXY=\$HTTP_PROXY podman run --rm --security-opt label=disable -v \$(pwd)/fb:/git -e "FB_GIT_BRANCH=${FB_GIT_BRANCH}" \
+                    docker.io/alpine/git clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .
+                '''
+                sh 'mkdir $(pwd)/fb/output'
                 script {
                     commonModule = load "pipelines/common.groovy"
-                    env.FB_CAUSE_USER_ID = commonModule.getCauseUserId()
+                    env.FB_CAUSE_USER_ID = commonModule.getCauseUserId()                    
                 }
-            }
-        }
-        stage('Checkout Config') {
-            steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    doGenerateSubmoduleConfigurations: false,
-                    extensions: [
-                        [$class: 'RelativeTargetDirectory', relativeTargetDir: 'fb'],
-                        [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[
-                            [$class:'SparseCheckoutPath', path: "config/server"],
-                            [$class:'SparseCheckoutPath', path: "config/base.json"]
-                        ]]
-                    ],
-                    submoduleCfg: [],
-                    userRemoteConfigs: [
-                        [
-                            credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
-                            url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-nr-funbucks.git'
-                        ]
-                    ]
-                ])
             }
         }
         stage('Get credentials') {
@@ -49,33 +38,91 @@ pipeline {
                 script {
                     env.FB_INTENTION_JSON = sh(
                         returnStdout: true,
-                        script: "set +x; scripts/broker_intention_open.sh scripts/intention-fb-configure.json"
+                        script: '''
+                            set +x
+                            podman run --rm \
+                                -v \$(pwd)/scripts:/app/scripts \
+                                -e 'FB_*' \
+                                ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_open.sh scripts/intention-fb-configure.json
+                        '''
                     )
-                    sh "scripts/broker_intention_action.sh start login"
+                    sh '''
+                        set +x
+                        podman run --rm \
+                            -v \$(pwd)/scripts:/app/scripts \
+                            -e 'FB_*' \
+                            ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_action.sh start login
+                    '''
                     env.VAULT_TOKEN = sh(
                         returnStdout: true,
-                        script: "set +x; scripts/vault_token.sh"
-                    )
+                        script: '''
+                            set +x
+                            podman run --rm \
+                                -v \$(pwd)/scripts:/app/scripts \
+                                -e 'FB_*' \
+                                -e VAULT_ADDR=${VAULT_ADDR} \
+                                ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/vault_token.sh
+                        '''
+                    ).trim()                    
                 }
             }
         }
         stage('Status') {
             steps {
-                sh "scripts/fluentbit_status.sh"
-                sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault token revoke -self"
-                sh "scripts/broker_intention_action.sh end login"
+                sh '''
+                    set +x
+                    podman run --rm \
+                        -v \$(pwd)/scripts:/app/scripts \
+                        -v \$(pwd)/fb:/app/fb \
+                        -v /sw_ux/bin:/sw_ux/bin \
+                        -e 'FB_*' \
+                        -e 'VAULT_*' \
+                        ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/fluentbit_status.sh
+                '''
+                sh '''
+                    set +x
+                    podman run --rm \
+                            -e SKIP_SETCAP=true \
+                            -e 'VAULT_*' \
+                            docker.io/hashicorp/vault token revoke -self
+                '''
+                sh '''
+                    set +x
+                    podman run --rm \
+                        -v \$(pwd)/scripts:/app/scripts \
+                        -e 'FB_*' \
+                        ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_action.sh end login
+                '''
             }
         }
     }
     post {
         success {
-            sh "set +x; scripts/broker_intention_close.sh 'success'"
+            sh '''
+                set +x
+                podman run --rm \
+                    -v \$(pwd)/scripts:/app/scripts \
+                    -e 'FB_*' \
+                    ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_close.sh 'success'
+            '''
         }
         unstable {
-            sh "set +x; scripts/broker_intention_close.sh 'failure'"
+            sh '''
+                set +x
+                podman run --rm \
+                    -v \$(pwd)/scripts:/app/scripts \
+                    -e 'FB_*' \
+                    ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_close.sh 'failure'
+            '''
         }
         failure {
-            sh "set +x; scripts/broker_intention_close.sh 'failure'"
+            sh '''
+                set +x
+                podman run --rm \
+                    -v \$(pwd)/scripts:/app/scripts \
+                    -e 'FB_*' \
+                    ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_close.sh 'failure'
+            '''
         }
     }
 }
