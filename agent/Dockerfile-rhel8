@@ -1,0 +1,32 @@
+FROM artifacts.developer.gov.bc.ca/redhat-docker-remote/ubi8
+
+# Prerequisites
+RUN yum install -y gcc-c++ gzip make openssl openssl-devel postgresql-libs tar which libyaml git
+RUN yum install -y http://mirror.centos.org/centos/8-stream/AppStream/x86_64/os/Packages/bison-3.0.4-10.el8.x86_64.rpm && \
+    yum install -y http://mirror.centos.org/centos/8-stream/AppStream/x86_64/os/Packages/flex-2.6.1-9.el8.x86_64.rpm
+
+# Cmake
+WORKDIR /tmp/cmake
+ENV CMAKE_URL https://github.com/Kitware/CMake/releases/download/v3.22.0/cmake-3.22.0.tar.gz
+RUN curl -L -s ${CMAKE_URL} | tar xzv -C . --strip-components 1 && \
+    ./configure --prefix=/usr/local && \
+    make -j$(nproc) && \
+    make install
+
+# Fluent-bit
+WORKDIR /tmp/fluent-bit
+ARG FLUENT_BIT_VERSION
+ENV FLUENT_BIT_VERSION=$FLUENT_BIT_VERSION
+ENV FLUENT_BIT_URL https://github.com/fluent/fluent-bit/archive/refs/tags/v${FLUENT_BIT_VERSION}.tar.gz
+RUN curl -L -s "${FLUENT_BIT_URL}" | tar xzv -C . --strip-components 1
+RUN yum install -y https://vault.centos.org/centos/8/PowerTools/x86_64/os/Packages/libyaml-devel-0.1.7-5.el8.x86_64.rpm
+RUN cd build && \
+    cmake ../ && \
+    make && \
+    make install
+
+WORKDIR /dropbox
+RUN mkdir ./fluent-bit && \
+    cp /usr/local/bin/fluent-bit /usr/lib64/libpq.so.5 /usr/lib64/libyaml-0.so.2 ./fluent-bit && \
+    tar -czvf fluent-bit-rhel8.tar.gz fluent-bit && \
+    rm -rf ./fluent-bit

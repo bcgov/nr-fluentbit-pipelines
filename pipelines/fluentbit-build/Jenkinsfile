@@ -1,0 +1,33 @@
+@Library('polaris') import ca.bc.gov.nrids.polaris.Podman
+def podman = new Podman(this, env)
+
+pipeline {
+    agent {
+        label 'podman'
+    }
+    stages {
+        stage('Setup') {
+            steps {
+                script {
+                    sh 'rm -r $(pwd)/dropbox'
+                    sh 'mkdir $(pwd)/dropbox'
+                    sh 'chmod 777 $(pwd)/dropbox'
+                }
+            }
+        }
+        stage('build') {
+            environment {
+                HTTP_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
+            }
+            steps {
+                script {
+                    podman.build(
+                        httpProxy: '\$HTTP_PROXY',
+                        options: "--build-arg FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION} -v\$(pwd)/dropbox:/dropbox -f \$(pwd)/agent/Dockerfile-rhel${params.RHEL_VERSION}"
+                    )
+                    sh 'ls -alh $(pwd)/dropbox'
+                }
+            }
+        }
+    }
+}
