@@ -1,4 +1,5 @@
-@Library('polaris') import ca.bc.gov.nrids.polaris.Podman
+@Library('polaris')
+import ca.bc.gov.nrids.polaris.Podman
 def podman = new Podman(this, env)
 def podmanLocal = new Podman(this, env, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
 def commonModule = [:]
