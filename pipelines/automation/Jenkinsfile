@@ -1,141 +1,106 @@
-import groovy.json.JsonSlurperClassic
-
-@NonCPS
-def jsonParse(def json) {
-    return new groovy.json.JsonSlurperClassic().parseText(json)
-}
-def commonModule = [:]
+@Library('polaris')
+import ca.bc.gov.nrids.polaris.Podman
+import ca.bc.gov.nrids.polaris.BrokerIntention
+import ca.bc.gov.nrids.polaris.Vault
 
 pipeline {
     agent {
-        label 'master'
+        label 'podman'
     }
     environment {
-        PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
-        FB_PIPELINE_ARTIFACTORY_CREDS = credentials('d7d54e7d-10c1-4466-a6d6-82ea62699416')
-        VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        FB_BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
-        FB_CONFIG_ROLE_ID = credentials('knox-vault-jenkins-aws-automation-role-id')
-        FB_NR_BROKER_JWT = credentials('nr-broker-jwt')
-        FB_BUILD_URL = "${env.BUILD_URL}"
-        AWS_REGION = "ca-central-1"
-        AWS_DEFAULT_REGION = "ca-central-1"
-        OS_URL = "apm.io.nrs.gov.bc.ca"
-        OS_DOMAIN = "nress-prod"
+        CONFIG_ROLE_ID = credentials('knox-vault-jenkins-aws-automation-role-id')
+        NR_BROKER_JWT = credentials('nr-broker-jwt')
         HTTP_PROXY = "http://forwardproxy.nrs.bcgov:23128"
         HTTPS_PROXY = "http://forwardproxy.nrs.bcgov:23128"
         NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
     }
     stages {
-        stage('Checkout') {
-            steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    doGenerateSubmoduleConfigurations: false,
-                    gitTool: 'jgit',
-                    submoduleCfg: [],
-                    userRemoteConfigs: [
-                        [
-                            credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
-                            url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/fluentbit/fluentbit-deploy.git'
-                        ]
-                    ]
-                ])
-            }
-        }
         stage('Setup') {
             steps {
                 script {
                     commonModule = load "pipelines/common.groovy"
-                    env.FB_CAUSE_USER_ID = commonModule.getCauseUserId()
+                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-aws-automation.json'))
+                    intention.userId = commonModule.getCauseUserId()
+                    intention.eventUrl = env.BUILD_URL
+                    println intention.open(NR_BROKER_JWT)
                 }
             }
         }
         stage('Get credentials') {
             steps {
                 script {
-                    env.FB_INTENTION_JSON = sh(
-                        returnStdout: true,
-                        script: "set +x; scripts/broker_intention_open.sh scripts/intention-aws-automation.json"
-                    )
-                    sh "scripts/broker_intention_action.sh start login"
-                    env.APP_TOKEN = sh(
-                        returnStdout: true,
-                        script: "set +x; scripts/vault_token.sh"
-                    )
-                    env.AWS_ACCOUNT_NUMBER = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault kv get -field=aws_account_number apps/prod/jenkins/aws-automation"
-                    )
-                    env.AWS_ACCESS_KEY_ID = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault kv get -field=aws_access_key apps/prod/jenkins/aws-automation"
-                    )
-                    env.AWS_SECRET_ACCESS_KEY = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault kv get -field=aws_secret_access_key apps/prod/jenkins/aws-automation"
-                    )
-                    env.AWS_ASSUME_ROLE = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault kv get -field=aws_assume_role apps/prod/jenkins/aws-automation"
-                    )
-                    sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$APP_TOKEN /sw_ux/bin/vault token revoke -self"
+                    intention.startAction("login")
+                    def vaultToken = intention.provisionToken("login", CONFIG_ROLE_ID)
+                    def vault = new Vault(vaultToken)
+                    def awsCreds = vault.read("apps/data/prod/jenkins/aws-automation")
+
+                    env.APP_TOKEN = vaultToken
+                    env.AWS_ACCOUNT_NUMBER = awsCreds.aws_account_number
+                    env.AWS_ACCESS_KEY_ID = awsCreds.aws_access_key
+                    env.AWS_SECRET_ACCESS_KEY = awsCreds.aws_secret_access_key
+                    env.AWS_ASSUME_ROLE = awsCreds.aws_assume_role
+                    env.AWS_REGION = "ca-central-1"
+                    env.AWS_DEFAULT_REGION = "ca-central-1"
+                    env.OS_URL = "apm.io.nrs.gov.bc.ca"
+                    env.OS_DOMAIN = "nress-prod"
+
+                    vault.revokeToken()
                 }
-            }
-        }
-        stage('Download Workflow CLI') {
-            steps {
-                sh 'scripts/automation_setup.sh'
             }
         }
         stage('Read Automation Queue') {
             steps {
                 script {
+                    def podman = new Podman(this, env, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     def agentMap = [:]
-                    while (true) {
-                        // Read queue
-                        def automationOutput = sh (
-                            script: './workflow/bin/run automation-message',
-                            returnStdout: true
-                        )
-                        .substring(17)
-                        .trim()
-                        echo automationOutput
-                        def messageArr = jsonParse(automationOutput)
-                        if (messageArr.size == 0) {
-                            break;
-                        }
-                        messageArr.each {
-                            if (!agentMap[it.server + it.agent]) {
-                                def job = hudson.model.Hudson.instance.getItemByFullName("FLUENTBIT/fluentbit-start-agent")
-                                def params = []
-                                params += new StringParameterValue('fluentbitHost', it.server)
-                                params += new StringParameterValue('fluentbitAgent', it.agent)
-                                def paramsAction = new ParametersAction(params)
-                                def cause = new hudson.model.Cause.RemoteCause("https://apm.io.nrs.gov.bc.ca", "Automation")
-                                def causeAction = new hudson.model.CauseAction(cause)
+                    // Read queue
+                    def automationOutput = podman.run(
+                        "nr-apm-stack-workflow:latest",
+                        options: "-e 'AWS_*' -e 'OS_*'",
+                        command: "automation-message --dryRun",
+                        httpProxy: "http://test-forwardproxy.nrs.bcgov:23128",
+                        skipPipelineEnv: true,
+                        returnStdout: true
+                    )
+                    .substring(17)
+                    .trim()
+                    echo automationOutput
+                    def messageArr = readJSON text: automationOutput
+                    messageArr.each {
+                        if (!agentMap[it.server + it.agent]) {
+                            def job = hudson.model.Hudson.instance.getItemByFullName("FLUENTBIT/fluentbit-start-agent")
+                            def params = []
+                            params += new StringParameterValue('fluentbitHost', it.server)
+                            params += new StringParameterValue('fluentbitAgent', it.agent)
+                            def paramsAction = new ParametersAction(params)
+                            def cause = new hudson.model.Cause.RemoteCause("https://apm.io.nrs.gov.bc.ca", "Automation")
+                            def causeAction = new hudson.model.CauseAction(cause)
 
-                                echo 'Starting: ' + it.server + ':' + it.agent
-                                hudson.model.Hudson.instance.queue.schedule(job, 0, causeAction, paramsAction)
-                                agentMap[it.server + it.agent] = true;
-                            }
+                            echo 'Starting: ' + it.server + ':' + it.agent
+                            hudson.model.Hudson.instance.queue.schedule(job, 0, causeAction, paramsAction)
+                            agentMap[it.server + it.agent] = true;
                         }
                     }
-                    sh "scripts/broker_intention_action.sh end login"
+                    intention.endAction("login")
                 }
             }
         }
     }
     post {
         success {
-            sh "set +x; scripts/broker_intention_close.sh 'success'"
+            script {
+                intention.close(true)
+            }
         }
         unstable {
-            sh "set +x; scripts/broker_intention_close.sh 'failure'"
+            script {
+                intention.close(false)
+            }
         }
         failure {
-            sh "set +x; scripts/broker_intention_close.sh 'failure'"
+            script {
+                intention.close(false)
+            }
         }
     }
 }
