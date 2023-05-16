@@ -1,7 +1,10 @@
 @Library('polaris')
 import ca.bc.gov.nrids.polaris.Podman
-def podman = new Podman(this, env)
-def podmanLocal = new Podman(this, env, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+import ca.bc.gov.nrids.polaris.BrokerIntention
+import ca.bc.gov.nrids.polaris.Vault
+
+def podman
+def intention
 def commonModule = [:]
 
 pipeline {
@@ -23,10 +26,9 @@ pipeline {
         FB_BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         FB_BUILD_URL = "${env.BUILD_URL}"
         PODMAN_HOST = "freight.bcgov"
-        ARTIFACTORY_URL = "artifacts.developer.gov.bc.ca/cc20-gen-docker-local"
         FB_CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
         FB_ROLE_ID = credentials('knox-vault-fluentbit-app-role-id')
-        FB_NR_BROKER_JWT = credentials('nr-broker-jwt')
+        NR_BROKER_JWT = credentials('nr-broker-jwt')
         IMAGE_TAG = "${params.imageTag}"
     }
     stages {
@@ -38,14 +40,11 @@ pipeline {
             steps {
                 sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
                 script {
+                    podman = new Podman(this)
                     podman.run("alpine/git:latest",
                         httpProxy: '\$HTTP_PROXY',
                         options: "--security-opt label=disable -v \$(pwd)/fb:/git -e FB_GIT_BRANCH=${FB_GIT_BRANCH}",
-                        command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .",
-                        skipPipelineEnv: true)                        
-                }
-                sh 'mkdir $(pwd)/fb/output'
-                script {
+                        command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .")
                     commonModule = load "pipelines/common.groovy"
                     env.FB_CAUSE_USER_ID = commonModule.getCauseUserId()
                     env.FB_FLUENTBIT_RELEASE = commonModule.getFluentBitRelease("${params.fluentbitHost}")
@@ -67,265 +66,126 @@ pipeline {
                     env.LOGS_HTTP_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
                     env.NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
                 }
+                sh 'mkdir $(pwd)/fb/output'
             }
         }
         stage('Build config') {
             steps {
                 script {
-                    podmanLocal.run("nr-funbucks:${params.imageTag}",
+                    podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman.run("nr-funbucks:${params.imageTag}",
                         options: "-v \$(pwd)/fb/config:/app/config -v \$(pwd)/fb/output:/app/output",
-                        command: "gen -m -s ${params.fluentbitHost}",
-                        skipPipelineEnv: true)
+                        command: "gen -m -s ${params.fluentbitHost}")
                 }                
             }
         }
         stage('Get credentials') {
             steps {
                 script {
-                    env.FB_INTENTION_JSON = podmanLocal.run(                        
-                        "fb-helper:${IMAGE_TAG}",
-                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*'",
-                        command: "scripts/broker_intention_open.sh scripts/intention-fb-install.json",
-                        skipPipelineEnv: true,
-                        returnStdout: true)
-                    sh '''
-                        set +x
-                        podman run --rm \
-                            -v \$(pwd)/scripts:/app/scripts \
-                            -e 'FB_*' \
-                            ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_action.sh start login
-                    '''
-                    env.VAULT_TOKEN = sh(
-                        returnStdout: true,
-                        script: '''
-                            set +x
-                            podman run --rm \
-                                -v \$(pwd)/scripts:/app/scripts \
-                                -e 'FB_*' \
-                                -e VAULT_ADDR=${VAULT_ADDR} \
-                                ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/vault_token.sh
-                        '''
-                    ).trim()
-                    env.FB_CD_USER = sh(
-                        returnStdout: true,
-                        script: '''
-                            set +x
-                            podman run --rm \
-                                -e SKIP_SETCAP=true \
-                                -e 'FB_*' \
-                                -e 'VAULT_*' \
-                                docker.io/hashicorp/vault kv get -field=${FB_VAULT_CD_USER_FIELD} ${FB_VAULT_CD_PATH}
-                        '''
-                    )
-                    env.FB_CD_PASS = sh(
-                        returnStdout: true,
-                        script: '''
-                            set +x
-                            podman run --rm \
-                                -e SKIP_SETCAP=true \
-                                -e 'FB_*' \
-                                -e 'VAULT_*' \
-                                docker.io/hashicorp/vault kv get -field=${FB_VAULT_CD_PASS_FIELD} ${FB_VAULT_CD_PATH}
-                        '''
-                    )
-                    env.FB_CI_USER = sh(
-                        returnStdout: true,
-                        script: '''
-                            set +x
-                            podman run --rm \
-                                -e SKIP_SETCAP=true \
-                                -e 'VAULT_*' \
-                                docker.io/hashicorp/vault kv get -field=username_lowercase groups/appdelivery/jenkins-isss-ci
-                        '''
-                    )
-                    env.FB_CI_PASS = sh(
-                        returnStdout: true,
-                        script: '''
-                            set +x
-                            podman run --rm \
-                                -e SKIP_SETCAP=true \
-                                -e 'VAULT_*' \
-                                docker.io/hashicorp/vault kv get -field=password groups/appdelivery/jenkins-isss-ci
-                        '''
-                    )
-                    sh '''
-                        set +x
-                        podman run --rm \
-                                -e SKIP_SETCAP=true \
-                                -e 'VAULT_*' \
-                                docker.io/hashicorp/vault token revoke -self
-                    '''
+                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-install.json'))
+                    intention.userId = commonModule.getCauseUserId()
+                    intention.eventUrl = env.BUILD_URL
+                    intention.open(NR_BROKER_JWT)
+                    intention.startAction("login")
+                    def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
+                    def vault = new Vault(vaultToken)
+                    def vault_cd_path = "${env.FB_VAULT_CD_PATH}"
+                    def cdCreds = vault.read(vault_cd_path.replaceFirst('/', '/data/'))
+                    def ciCreds = vault.read('groups/data/appdelivery/jenkins-isss-ci')
+                    env.FB_CD_USER = cdCreds[env.FB_VAULT_CD_USER_FIELD]
+                    env.FB_CD_PASS = cdCreds[env.FB_VAULT_CD_PASS_FIELD]
+                    env.FB_CI_USER = ciCreds.username_lowercase
+                    env.FB_CI_PASS = ciCreds.password
+                    vault.revokeToken()
                 }
             }
         }
-        stage('Copy') {
+        stage('Copy files') {
             steps {
-                sh '''
-                    set +x
-                    podman run --rm \
-                        -v \$(pwd)/scripts:/app/scripts \
-                        -e 'FB_*' \
-                        ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_action.sh start install
-                '''
-                sh '''
-                    set +x
-                    podman run --rm \
-                        -v \$(pwd)/scripts:/app/scripts \
-                        -v \$(pwd)/fb:/app/fb \
-                        -v \$(pwd)/files:/app/files \
-                        -e 'FB_*' \
-                        ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/${FB_SERVER_OS}/copy_files.sh
-                '''
+                script {
+                    intention.startAction("install")
+                    podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman.run("fb-helper:${params.imageTag}",
+                        options: "-v \$(pwd)/scripts:/app/scripts -v \$(pwd)/fb:/app/fb -v \$(pwd)/files:/app/files -e 'FB_*'",
+                        command: "scripts/${FB_SERVER_OS}/copy_files.sh")
+                }
             }
         }
         stage('Stop fluent bit') {
             steps {
-                sh '''
-                    set +x
-                    podman run --rm \
-                        -v \$(pwd)/scripts:/app/scripts \
-                        -e 'FB_*' \
-                        -e VAULT_ADDR=${VAULT_ADDR} \
-                        ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/${FB_SERVER_OS}/stop_fluentbit.sh
-                '''
+                script {
+                    podman.run("fb-helper:${params.imageTag}",
+                    options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR}",
+                    command: "scripts/${FB_SERVER_OS}/stop_fluentbit.sh")
+                }                
             }
         }
         stage('Remove previous agents') {
             steps {
-                sh '''
-                    set +x
-                    podman run --rm \
-                        -v \$(pwd)/scripts:/app/scripts \
-                        -e 'FB_*' \
-                        -e VAULT_ADDR=${VAULT_ADDR} \
-                        ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/${FB_SERVER_OS}/remove_agents.sh
-                '''
+                script {
+                    podman.run("fb-helper:${params.imageTag}",
+                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR}",
+                        command: "scripts/${FB_SERVER_OS}/remove_agents.sh")
+                }
             }
         }
         stage('Deploy agents') {
             steps {
                 script {
                     if (env.FB_SERVER_OS == "linux") {
-                        sh '''
-                            set +x
-                            podman run --rm \
-                                -v \$(pwd)/scripts:/app/scripts \
-                                -e 'FB_*' \
-                                -e VAULT_ADDR=${VAULT_ADDR} \
-                                -e HTTP_PROXY=${LOGS_HTTP_PROXY} \
-                                -e NO_PROXY=${NO_PROXY} \
-                                ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/linux/deploy_agents.sh
-                        '''
+                        podman.run("fb-helper:${params.imageTag}",
+                            options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
+                            command: "scripts/linux/deploy_agents.sh")
                     } else if (env.FB_SERVER_OS == "windows") {
-                        sh '''
-                            set +x
-                            podman run --rm \
-                                -v \$(pwd)/scripts:/app/scripts \
-                                -e 'FB_*' \
-                                -e VAULT_ADDR=${VAULT_ADDR} \
-                                -e HTTP_PROXY=${LOGS_HTTP_PROXY} \
-                                -e NO_PROXY=${NO_PROXY} \
-                                ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/windows/deploy_agents_base.sh
-                        '''
-                        sh '''
-                            set +x
-                            podman run --rm \
-                                -v \$(pwd)/scripts:/app/scripts \
-                                -e 'FB_*' \
-                                -e VAULT_ADDR=${VAULT_ADDR} \
-                                -e HTTP_PROXY=${LOGS_HTTP_PROXY} \
-                                -e NO_PROXY=${NO_PROXY} \
-                                ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/windows/deploy_agents_service.sh
-                        '''
+                        podman.run("fb-helper:${params.imageTag}",
+                            options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
+                            command: "scripts/windows/deploy_agents_base.sh")
+                        podman.run("fb-helper:${params.imageTag}",
+                            options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
+                            command: "scripts/windows/deploy_agents_service.sh")                        
                     }
-                    sh '''
-                        set +x
-                        podman run --rm \
-                            -v \$(pwd)/scripts:/app/scripts \
-                            -e 'FB_*' \
-                            ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_action.sh end install
-                    '''
+                    intention.endAction("install")
                 }
             }
         }
-        stage('Get secret') {
+        stage('Get secret ID') {
             steps {
                 script {
-                    sh '''
-                        set +x
-                        podman run --rm \
-                            -v \$(pwd)/scripts:/app/scripts \
-                            -e 'FB_*' \
-                            ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_action.sh start provision
-                    '''
-                    env.WRAPPED_FB_SECRET_ID = sh(
-                        returnStdout: true,
-                        script: '''
-                            set +x
-                            podman run --rm \
-                                -v \$(pwd)/scripts:/app/scripts \
-                                -e 'FB_*' \
-                                ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/vault_secret_id.sh
-                        '''
-                    ).trim()
+                    intention.startAction("provision")
+                    def wrapped_fb_secret_id = intention.provisionSecretId("provision", FB_ROLE_ID)
+                    env.WRAPPED_FB_SECRET_ID = wrapped_fb_secret_id
                 }
             }
         }
         stage('Start fluent bit') {
             steps {
-                sh '''
-                    set +x
-                    podman run --rm \
-                        -v \$(pwd)/scripts:/app/scripts \
-                        -e 'FB_*' \
-                        -e VAULT_ADDR=${VAULT_ADDR} \
-                        -e WRAPPED_FB_SECRET_ID=${WRAPPED_FB_SECRET_ID} \
-                        ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/${FB_SERVER_OS}/start_fluentbit_agent.sh
-                '''
-                sh '''
-                    set +x
-                    podman run --rm \
-                        -v \$(pwd)/scripts:/app/scripts \
-                        -e 'FB_*' \
-                        ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_action.sh end provision
-                '''
-                sh '''
-                    set +x
-                    podman run --rm \
-                        -v \$(pwd)/scripts:/app/scripts \
-                        -e 'FB_*' \
-                        ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_action.sh end login
-                '''
+                script {
+                    podman = new Podman(this, env, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman.run("fb-helper:${params.imageTag}",
+                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e 'WRAPPED_FB_SECRET_ID*'",
+                        command: "scripts/${FB_SERVER_OS}/start_fluentbit_agent.sh",
+                        skipPipelineEnv: true)
+                    intention.endAction("provision")
+                    intention.endAction("login")
+                }
             }
         }
     }
     post {
         success {
-            sh '''
-                set +x
-                podman run --rm \
-                    -v \$(pwd)/scripts:/app/scripts \
-                    -e 'FB_*' \
-                    ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_close.sh 'success'
-            '''
+            script {
+                intention.close(true)
+            }
         }
         unstable {
-            sh '''
-                set +x
-                podman run --rm \
-                    -v \$(pwd)/scripts:/app/scripts \
-                    -e 'FB_*' \
-                    ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_close.sh 'failure'
-            '''
+            script {
+                intention.close(false)
+            }
         }
         failure {
-            sh '''
-                set +x
-                podman run --rm \
-                    -v \$(pwd)/scripts:/app/scripts \
-                    -e 'FB_*' \
-                    ${ARTIFACTORY_URL}/fb-helper:${IMAGE_TAG} scripts/broker_intention_close.sh 'failure'
-            '''
+            script {
+                intention.close(false)
+            }
         }
     }
 }
