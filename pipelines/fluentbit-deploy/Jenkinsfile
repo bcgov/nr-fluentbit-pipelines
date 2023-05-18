@@ -19,7 +19,7 @@ pipeline {
         FB_INSTALL_USER = "wwwadm"
         FB_RUN_USER = "wwwsvr"
         FB_VAULT_RELEASE = "1.13.2"
-        FB_ENVCONSUL_RELEASE = "0.12.1"
+        FB_ENVCONSUL_RELEASE = "0.13.1"
         FB_JQ_RELEASE = "1.6"
         FB_SQLITE_RELEASE = "3.38.5"
         FB_WINSW_RELEASE = "v2.11.0"
