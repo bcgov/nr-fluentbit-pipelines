@@ -36,8 +36,7 @@ pipeline {
                     podman.run("alpine/git:latest",
                         httpProxy: '\$HTTP_PROXY',
                         options: "--security-opt label=disable -v \$(pwd)/fb:/git -e FB_GIT_BRANCH=${FB_GIT_BRANCH}",
-                        command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .",
-                        skipPipelineEnv: true)
+                        command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .")
                     commonModule = load "pipelines/common.groovy"
                     env.FB_CAUSE_USER_ID = commonModule.getCauseUserId()
                     env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")

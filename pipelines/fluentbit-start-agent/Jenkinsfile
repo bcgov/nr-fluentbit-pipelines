@@ -36,8 +36,7 @@ pipeline {
                     podman.run("alpine/git:latest",
                         httpProxy: '\$HTTP_PROXY',
                         options: "--security-opt label=disable -v \$(pwd)/fb:/git -e FB_GIT_BRANCH=${FB_GIT_BRANCH}",
-                        command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .",
-                        skipPipelineEnv: true)
+                        command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .")
                     commonModule = load "pipelines/common.groovy"
                     env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")
                     env.FB_SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
@@ -77,11 +76,10 @@ pipeline {
         stage('Start fluent bit') {
             steps {
                 script {
-                    podman = new Podman(this, env, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.run("fb-helper:${params.imageTag}",
                         options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e 'WRAPPED_FB_SECRET_ID*'",
-                        command: "scripts/${FB_SERVER_OS}/start_fluentbit_agent.sh",
-                        skipPipelineEnv: true)
+                        command: "scripts/${FB_SERVER_OS}/start_fluentbit_agent.sh")
                     intention.endAction("provision")
                     intention.endAction("login")
                 }
