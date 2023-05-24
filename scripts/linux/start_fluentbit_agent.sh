@@ -56,7 +56,7 @@ for agent in \${AGENTS[@]} ; do
           sleep 1
         done
       fi
-      echo "Starting agent $HOST : \$AGENT"
+      echo "Starting agent $FB_HOST : \$AGENT"
       /sw_ux/s6/bin/s6-svc -o $FB_S6_SERVICE_HOME/\$AGENT/
   fi
 done
