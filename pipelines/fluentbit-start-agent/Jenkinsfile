@@ -27,7 +27,7 @@ pipeline {
         stage('Setup') {
             environment {
                 HTTP_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
-                FB_GIT_BRANCH = "${params.fbGitBranch}"                
+                FB_GIT_BRANCH = "${params.fbGitBranch}"
             }
             steps {
                 sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
@@ -94,12 +94,16 @@ pipeline {
         }
         unstable {
             script {
-                intention.close(false)
+                if (intention) {
+                    intention.close(false)
+                }
             }
         }
         failure {
             script {
-                intention.close(false)
+                if (intention) {
+                    intention.close(false)
+                }
             }
         }
     }

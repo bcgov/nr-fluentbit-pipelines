@@ -25,7 +25,6 @@ pipeline {
         FB_WINSW_RELEASE = "v2.11.0"
         FB_BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         FB_BUILD_URL = "${env.BUILD_URL}"
-        PODMAN_HOST = "freight.bcgov"
         FB_CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
         FB_ROLE_ID = credentials('knox-vault-fluentbit-app-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
@@ -35,8 +34,8 @@ pipeline {
         stage('Setup') {
             environment {
                 HTTP_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
-                FB_GIT_BRANCH = "${params.fbGitBranch}"                
-            }            
+                FB_GIT_BRANCH = "${params.fbGitBranch}"
+            }
             steps {
                 sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
                 script {
@@ -76,7 +75,7 @@ pipeline {
                     podman.run("nr-funbucks:${params.imageTag}",
                         options: "-v \$(pwd)/fb/config:/app/config -v \$(pwd)/fb/output:/app/output",
                         command: "gen -m -s ${params.fluentbitHost}")
-                }                
+                }
             }
         }
         stage('Get credentials') {
@@ -117,7 +116,7 @@ pipeline {
                     podman.run("fb-helper:${params.imageTag}",
                     options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR}",
                     command: "scripts/${FB_SERVER_OS}/stop_fluentbit.sh")
-                }                
+                }
             }
         }
         stage('Remove previous agents') {
@@ -142,7 +141,7 @@ pipeline {
                             command: "scripts/windows/deploy_agents_base.sh")
                         podman.run("fb-helper:${params.imageTag}",
                             options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
-                            command: "scripts/windows/deploy_agents_service.sh")                        
+                            command: "scripts/windows/deploy_agents_service.sh")
                     }
                     intention.endAction("install")
                 }
@@ -179,12 +178,16 @@ pipeline {
         }
         unstable {
             script {
-                intention.close(false)
+                if (intention) {
+                    intention.close(false)
+                }
             }
         }
         failure {
             script {
-                intention.close(false)
+                if (intention) {
+                    intention.close(false)
+                }
             }
         }
     }

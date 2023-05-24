@@ -12,13 +12,13 @@ pipeline {
         label 'podman'
     }
     environment {
-        VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        FB_INSTALL_USER="wwwadm"
-        FB_RUN_USER="wwwsvr"
-        FB_S6_SERVICE_HOME = "/apps_ux/s6_services"
-        FB_BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
+        VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
+        FB_INSTALL_USER = "wwwadm"
+        FB_RUN_USER = "wwwsvr"
+        FB_S6_SERVICE_HOME = "/apps_ux/s6_services"
+        FB_BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
         IMAGE_TAG = "${params.imageTag}"
     }
     stages {
@@ -26,7 +26,7 @@ pipeline {
             environment {
                 HTTP_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
                 FB_GIT_BRANCH = "${params.fbGitBranch}"
-            }            
+            }
             steps {
                 sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
                 script {
@@ -77,8 +77,8 @@ pipeline {
                         options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR}",
                         command: "scripts/${FB_SERVER_OS}/stop_fluentbit.sh")
                     intention.endAction("login")
-                }                
-            }            
+                }
+            }
         }
     }
     post {
@@ -89,13 +89,16 @@ pipeline {
         }
         unstable {
             script {
-                intention.close(false)
+                if (intention) {
+                    intention.close(false)
+                }
             }
         }
         failure {
             script {
-                intention.close(false)
+                if (intention) {
+                    intention.close(false)
+                }
             }
         }
-    }
 }
