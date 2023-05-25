@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set +x
 
-SERVER_IP=$(dig +short $HOST | tail -n1)
+SERVER_IP=$(dig +short $FB_HOST | tail -n1)
 
 sshpass -p $FB_CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $FB_CD_USER@$FB_HOST /bin/bash <<EOF
 # become FB_RUN_USER
