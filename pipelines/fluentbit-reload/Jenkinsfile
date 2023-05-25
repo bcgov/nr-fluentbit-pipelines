@@ -77,7 +77,7 @@ pipeline {
                     podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.run("fb-helper:${params.imageTag}",
                         options: "-v \$(pwd)/scripts:/app/scripts -v /sw_ux/bin:/sw_ux/bin -e 'FB_*' -e 'VAULT_*'",
-                        command: "scripts/${FB_SERVER_OS}/reload_logs.sh")
+                        command: "scripts/${FB_SERVER_OS.toLowerCase()}/reload_logs.sh")
                     intention.endAction("login")
                 }
             }

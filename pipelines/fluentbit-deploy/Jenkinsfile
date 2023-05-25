@@ -106,7 +106,7 @@ pipeline {
                     podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.run("fb-helper:${params.imageTag}",
                         options: "-v \$(pwd)/scripts:/app/scripts -v \$(pwd)/fb:/app/fb -v \$(pwd)/files:/app/files -e 'FB_*'",
-                        command: "scripts/${FB_SERVER_OS}/copy_files.sh")
+                        command: "scripts/${FB_SERVER_OS.toLowerCase()}/copy_files.sh")
                 }
             }
         }
@@ -115,7 +115,7 @@ pipeline {
                 script {
                     podman.run("fb-helper:${params.imageTag}",
                     options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR}",
-                    command: "scripts/${FB_SERVER_OS}/stop_fluentbit.sh")
+                    command: "scripts/${FB_SERVER_OS.toLowerCase()}/stop_fluentbit.sh")
                 }
             }
         }
@@ -124,7 +124,7 @@ pipeline {
                 script {
                     podman.run("fb-helper:${params.imageTag}",
                         options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR}",
-                        command: "scripts/${FB_SERVER_OS}/remove_agents.sh")
+                        command: "scripts/${FB_SERVER_OS.toLowerCase()}/remove_agents.sh")
                 }
             }
         }
@@ -162,7 +162,7 @@ pipeline {
                     podman = new Podman(this, env, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.run("fb-helper:${params.imageTag}",
                         options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e 'WRAPPED_FB_SECRET_ID*'",
-                        command: "scripts/${FB_SERVER_OS}/start_fluentbit_agent.sh",
+                        command: "scripts/${FB_SERVER_OS.toLowerCase()}/start_fluentbit_agent.sh",
                         skipPipelineEnv: true)
                     intention.endAction("provision")
                     intention.endAction("login")

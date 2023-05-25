@@ -79,7 +79,7 @@ pipeline {
                     podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.run("fb-helper:${params.imageTag}",
                         options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e 'WRAPPED_FB_SECRET_ID*'",
-                        command: "scripts/${FB_SERVER_OS}/start_fluentbit_agent.sh")
+                        command: "scripts/${FB_SERVER_OS.toLowerCase()}/start_fluentbit_agent.sh")
                     intention.endAction("provision")
                     intention.endAction("login")
                 }

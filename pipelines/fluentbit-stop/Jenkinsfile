@@ -75,7 +75,7 @@ pipeline {
                     podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.run("fb-helper:${params.imageTag}",
                         options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR}",
-                        command: "scripts/${FB_SERVER_OS}/stop_fluentbit.sh")
+                        command: "scripts/${FB_SERVER_OS.toLowerCase()}/stop_fluentbit.sh")
                     intention.endAction("login")
                 }
             }
