@@ -22,7 +22,10 @@ pipeline {
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-aws-automation.json'))
                     intention.userId = commonModule.getCauseUserId()
                     intention.eventUrl = env.BUILD_URL
-                    println intention.open(NR_BROKER_JWT)
+                    if (!intention.open(NR_BROKER_JWT)) {
+                        currentBuild.result = 'ABORTED'
+                        error('Intention could not be opened')
+                    }
                 }
             }
         }
@@ -34,7 +37,6 @@ pipeline {
                     def vault = new Vault(vaultToken)
                     def awsCreds = vault.read("apps/data/prod/jenkins/aws-automation")
 
-                    env.APP_TOKEN = vaultToken
                     env.AWS_ACCOUNT_NUMBER = awsCreds.aws_account_number
                     env.AWS_ACCESS_KEY_ID = awsCreds.aws_access_key
                     env.AWS_SECRET_ACCESS_KEY = awsCreds.aws_secret_access_key
@@ -94,12 +96,16 @@ pipeline {
         }
         unstable {
             script {
-                intention.close(false)
+                if (intention) {
+                    intention.close(false)
+                }
             }
         }
         failure {
             script {
-                intention.close(false)
+                if (intention) {
+                    intention.close(false)
+                }
             }
         }
     }
