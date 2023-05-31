@@ -17,6 +17,7 @@ pipeline {
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
         IMAGE_TAG = "${params.imageTag}"
+        AUTHFILE = "fluent-bit.auth.json"
     }
     stages {
         stage('Setup') {
@@ -27,19 +28,7 @@ pipeline {
             steps {
                 sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
                 script {
-                    podman = new Podman(this)
-                    podman.run("alpine/git:latest",
-                        httpProxy: '\$HTTP_PROXY',
-                        options: "--security-opt label=disable -v \$(pwd)/fb:/git -e FB_GIT_BRANCH=${FB_GIT_BRANCH}",
-                        command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .")
                     commonModule = load "pipelines/common.groovy"
-                    env.FB_CAUSE_USER_ID = commonModule.getCauseUserId()
-                }
-            }
-        }
-        stage('Status') {
-            steps {
-                script {
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
                     intention.userId = commonModule.getCauseUserId()
                     intention.eventUrl = env.BUILD_URL
@@ -47,9 +36,28 @@ pipeline {
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", CONFIG_ROLE_ID)
                     def vault = new Vault(vaultToken)
+                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifacts-artifacts-c2053d-ehahkw-qgubfm')
+                    env.REGISTRY_USERNAME = registryCreds['username']
+                    env.REGISTRY_PASSWORD = registryCreds['password']
+                    podman = new Podman(this)
+                    podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
+                    podman.run("alpine/git:latest",
+                        httpProxy: '\$HTTP_PROXY',
+                        authfile: "${env.AUTHFILE}",
+                        options: "--security-opt label=disable -v \$(pwd)/fb:/git -e FB_GIT_BRANCH=${FB_GIT_BRANCH}",
+                        command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .")
+                }
+            }
+        }
+        stage('Status') {
+            steps {
+                script {
+                    def vaultToken = intention.provisionToken("login", CONFIG_ROLE_ID)
+                    def vault = new Vault(vaultToken)
                     env.VAULT_TOKEN = vaultToken
                     podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.run("fb-helper:${params.imageTag}",
+                        authfile: "${env.AUTHFILE}",
                         options: "-v \$(pwd)/scripts:/app/scripts -v \$(pwd)/fb:/app/fb -v /sw_ux/bin:/sw_ux/bin -e 'FB_*' -e 'VAULT_*'",
                         command: "scripts/fluentbit_status.sh")
                     vault.revokeToken()
