@@ -22,6 +22,7 @@ pipeline {
         NR_BROKER_JWT = credentials('nr-broker-jwt')
         FB_BUILD_URL = "${env.BUILD_URL}"
         IMAGE_TAG = "${params.imageTag}"
+        AUTHFILE = "fluent-bit.auth.json"
     }
     stages {
         stage('Setup') {
@@ -32,13 +33,24 @@ pipeline {
             steps {
                 sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
                 script {
+                    commonModule = load "pipelines/common.groovy"
+                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
+                    intention.userId = commonModule.getCauseUserId()
+                    intention.eventUrl = env.BUILD_URL
+                    intention.open(NR_BROKER_JWT)
+                    intention.startAction("login")
+                    def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
+                    def vault = new Vault(vaultToken)
+                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifacts-artifacts-c2053d-ehahkw-qgubfm')
+                    env.REGISTRY_USERNAME = registryCreds['username']
+                    env.REGISTRY_PASSWORD = registryCreds['password']
                     podman = new Podman(this)
+                    podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
                     podman.run("alpine/git:latest",
                         httpProxy: '\$HTTP_PROXY',
+                        authfile: "${env.AUTHFILE}",
                         options: "--security-opt label=disable -v \$(pwd)/fb:/git -e FB_GIT_BRANCH=${FB_GIT_BRANCH}",
                         command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .")
-                    commonModule = load "pipelines/common.groovy"
-                    env.FB_CAUSE_USER_ID = commonModule.getCauseUserId()
                     env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")
                     env.FB_SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
                     if (env.FB_SERVER_OS != "linux") {
@@ -50,19 +62,6 @@ pipeline {
                     env.FB_VAULT_CD_USER_FIELD = commonModule.getVaultCdUserField("${params.fluentbitHost}")
                     env.FB_VAULT_CD_PASS_FIELD = commonModule.getVaultCdPassField("${params.fluentbitHost}")
                     env.FB_VAULT_CD_PATH = commonModule.getVaultCdPath("${params.fluentbitHost}")
-                }
-            }
-        }
-        stage('Get credentials') {
-            steps {
-                script {
-                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
-                    intention.userId = commonModule.getCauseUserId()
-                    intention.eventUrl = env.BUILD_URL
-                    intention.open(NR_BROKER_JWT)
-                    intention.startAction("login")
-                    def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
-                    def vault = new Vault(vaultToken)
                     def vault_cd_path = "${env.FB_VAULT_CD_PATH}"
                     def cdCreds = vault.read(vault_cd_path.replaceFirst('/', '/data/'))
                     env.FB_CD_USER = cdCreds[env.FB_VAULT_CD_USER_FIELD]
@@ -75,7 +74,9 @@ pipeline {
             steps {
                 script {
                     podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
                     podman.run("fb-helper:${params.imageTag}",
+                        authfile: "${env.AUTHFILE}",
                         options: "-v \$(pwd)/scripts:/app/scripts -v /sw_ux/bin:/sw_ux/bin -e 'FB_*' -e 'VAULT_*'",
                         command: "scripts/${FB_SERVER_OS.toLowerCase()}/reload_logs.sh")
                     intention.endAction("login")
