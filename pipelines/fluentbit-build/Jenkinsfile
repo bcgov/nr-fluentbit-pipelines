@@ -18,11 +18,13 @@ pipeline {
         stage('build') {
             environment {
                 HTTP_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
+                AUTHFILE = "fluent-bit.auth.json"
             }
             steps {
                 script {
                     podman.build(
                         httpProxy: '\$HTTP_PROXY',
+                        authfile: "${env.AUTHFILE}",
                         options: "--build-arg FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION} -v\$(pwd)/dropbox:/dropbox -f \$(pwd)/agent/Dockerfile-rhel${params.RHEL_VERSION}"
                     )
                     sh 'ls -alh $(pwd)/dropbox'
