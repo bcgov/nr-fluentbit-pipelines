@@ -6,11 +6,11 @@ sshpass -p $FB_CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $FB_CD_USER@$FB_HOST
 \$env:VAULT_TOKEN = "\$VAULT_TOKEN"
 \$env:FB_SECRET_ID = ($FB_BIN_DIR/vault/vault.exe unwrap -field=secret_id $WRAPPED_FB_SECRET_ID)
 
-# if $AGENT defined, deploy one; else deploy all in the list
-if ("$AGENT".Length -eq 0) {
+# if $FB_AGENT defined, deploy one; else deploy all in the list
+if ("$FB_AGENT".Length -eq 0) {
   \$AGENTS = (Get-ChildItem -Directory -Path "$FB_AGENT_ROOT/fluent-bit.*" -Name)
 } else {
-  \$AGENTS=("$AGENT")
+  \$AGENTS=("$FB_AGENT")
 }
 
 if (\$AGENTS.count -gt 0) {
