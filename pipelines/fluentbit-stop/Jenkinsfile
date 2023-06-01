@@ -77,6 +77,7 @@ pipeline {
                         authfile: "${env.AUTHFILE}",
                         options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR}",
                         command: "scripts/${FB_SERVER_OS.toLowerCase()}/stop_fluentbit.sh")
+                    podman.logout(authfile: "${env.AUTHFILE}")
                     intention.endAction("login")
                 }
             }

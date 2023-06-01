@@ -87,6 +87,7 @@ pipeline {
                             agentMap[it.server + it.agent] = true;
                         }
                     }
+                    podman.logout(authfile: "${env.AUTHFILE}")
                     intention.endAction("login")
                 }
             }

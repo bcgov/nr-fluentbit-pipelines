@@ -61,6 +61,7 @@ pipeline {
                         options: "-v \$(pwd)/scripts:/app/scripts -v \$(pwd)/fb:/app/fb -v /sw_ux/bin:/sw_ux/bin -e 'FB_*' -e 'VAULT_*'",
                         command: "scripts/fluentbit_status.sh")
                     vault.revokeToken()
+                    podman.logout(authfile: "${env.AUTHFILE}")
                     intention.endAction("login")
                 }
             }

@@ -82,6 +82,7 @@ pipeline {
                         authfile: "${env.AUTHFILE}",
                         options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e 'WRAPPED_FB_SECRET_ID*'",
                         command: "scripts/${FB_SERVER_OS.toLowerCase()}/start_fluentbit_agent.sh")
+                    podman.logout(authfile: "${env.AUTHFILE}")
                     intention.endAction("provision")
                     intention.endAction("login")
                 }
