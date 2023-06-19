@@ -48,7 +48,7 @@ pipeline {
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
                     def vault = new Vault(vaultToken)
-                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifacts-artifacts-c2053d-ehahkw-qgubfm')
+                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifactory')
                     env.REGISTRY_USERNAME = registryCreds['username']
                     env.REGISTRY_PASSWORD = registryCreds['password']
                     podman = new Podman(this)

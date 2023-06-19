@@ -46,7 +46,7 @@ pipeline {
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", CONFIG_ROLE_ID)
                     def vault = new Vault(vaultToken)
-                    def cdCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifacts-artifacts-c2053d-ehahkw-qgubfm')
+                    def cdCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifactory')
                     env.REGISTRY_USERNAME = cdCreds['username']
                     env.REGISTRY_PASSWORD = cdCreds['password']
                     vault.revokeToken()
