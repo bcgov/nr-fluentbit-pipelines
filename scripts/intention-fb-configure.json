@@ -10,7 +10,7 @@
       "id": "login",
       "provision": ["token/self"],
       "service": {
-        "name": "jenkins_polaris",
+        "name": "jenkins-polaris",
         "project": "jenkins",
         "environment": "production"
       }
