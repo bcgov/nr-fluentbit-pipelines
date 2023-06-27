@@ -56,7 +56,7 @@ pipeline {
                 script {
                     def podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
-                    def agentMap = [:]                    
+                    def agentMap = [:]
                     // Read queue
                     def automationOutput = podman.run(
                         "nr-apm-stack-workflow:latest",
@@ -72,19 +72,16 @@ pipeline {
                     def messageArr = readJSON text: automationOutput
                     messageArr.each {
                         if (!agentMap[it.server + it.agent]) {
-                            def job = hudson.model.Hudson.instance.getItemByFullName("fluentbit/fluentbit-start-agent")
-                            def params = []
-                            params += new StringParameterValue('fluentbitHost', it.server)
-                            params += new StringParameterValue('fluentbitAgent', it.agent)
-                            def paramsAction = new ParametersAction(params)
-                            def cause = new hudson.model.Cause.RemoteCause("https://apm.io.nrs.gov.bc.ca", "Automation")
-                            def causeAction = new hudson.model.CauseAction(cause)
-
                             echo 'Starting: ' + it.server + ':' + it.agent
-                            hudson.model.Hudson.instance.queue.schedule(job, 0, causeAction, paramsAction)
+                            build job: './fluentbit-start-agent',
+                                parameters: [
+                                    string(name: 'fluentbitHost', value: String.valueOf(it.server)),
+                                    string(name: 'fluentbitAgent', value: 'prefix-' + String.valueOf(it.agent))
+                                ],
+                                wait: false
                             agentMap[it.server + it.agent] = true;
                         }
-                    }                                      
+                    }
                     podman.logout(authfile: "${env.AUTHFILE}")
                     intention.endAction("login")
                 }
