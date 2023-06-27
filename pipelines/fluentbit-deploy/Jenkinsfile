@@ -1,183 +1,202 @@
+@Library('polaris')
+import ca.bc.gov.nrids.polaris.Podman
+import ca.bc.gov.nrids.polaris.BrokerIntention
+import ca.bc.gov.nrids.polaris.Vault
+
+def podman
+def intention
 def commonModule = [:]
 
 pipeline {
     agent {
-        label 'master'
+        label 'podman'
     }
     environment {
-        PATH = "/sw_ux/node/current/bin:/sw_ux/bin:$PATH"
-        PIPELINE_ARTIFACTORY_CREDS = credentials('d7d54e7d-10c1-4466-a6d6-82ea62699416')
-        FUNBUCKS_OUTPUT = "nr-funbucks/output"
+        FB_PIPELINE_ARTIFACTORY_CREDS = credentials('ci-user')
+        FB_FUNBUCKS_OUTPUT = "fb/output"
         VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-        S6_SERVICE_HOME = "/apps_ux/s6_services"
-        INSTALL_USER = "wwwadm"
-        RUN_USER = "wwwsvr"
-        VAULT_RELEASE = "1.10.4"
-        ENVCONSUL_RELEASE = "0.12.1"
-        JQ_RELEASE = "1.6"
-        SQLITE_RELEASE = "3.38.5"
-        WINSW_RELEASE = "v2.11.0"
-        BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
-        CONFIG_ROLE_ID = credentials('knox-vault-jenkins-isss-role-id')
+        FB_S6_SERVICE_HOME = "/apps_ux/s6_services"
+        FB_INSTALL_USER = "wwwadm"
+        FB_RUN_USER = "wwwsvr"
+        FB_VAULT_RELEASE = "1.13.2"
+        FB_ENVCONSUL_RELEASE = "0.12.1"
+        FB_JQ_RELEASE = "1.6"
+        FB_SQLITE_RELEASE = "3.38.5"
+        FB_WINSW_RELEASE = "v2.11.0"
+        FB_BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
+        FB_BUILD_URL = "${env.BUILD_URL}"
+        FB_CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
         FB_ROLE_ID = credentials('knox-vault-fluentbit-app-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
+        IMAGE_TAG = "${params.imageTag}"
+        AUTHFILE = "fluent-bit.auth.json"
     }
     stages {
         stage('Setup') {
+            environment {
+                HTTP_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
+                FB_GIT_BRANCH = "${params.fbGitBranch}"
+            }
             steps {
+                sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
                 script {
                     commonModule = load "pipelines/common.groovy"
-                    env.CAUSE_USER_ID = commonModule.getCauseUserId()
-                    env.FLUENTBIT_RELEASE = commonModule.getFluentBitRelease("${params.fluentbitHost}")
-                    env.HOST = commonModule.getHost("${params.fluentbitHost}")
-                    env.SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
-                    if (env.SERVER_OS != "linux" && env.SERVER_OS != "windows") {
+                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-install.json'))
+                    intention.userId = commonModule.getCauseUserId()
+                    intention.eventUrl = env.BUILD_URL
+                    intention.open(NR_BROKER_JWT)
+                    intention.startAction("login")
+                    def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
+                    def vault = new Vault(vaultToken)
+                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifactory')
+                    env.REGISTRY_USERNAME = registryCreds['username']
+                    env.REGISTRY_PASSWORD = registryCreds['password']
+                    podman = new Podman(this)
+                    podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
+                    podman.run("alpine/git:latest",
+                        httpProxy: '\$HTTP_PROXY',
+                        authfile: "${env.AUTHFILE}",
+                        options: "--security-opt label=disable -v \$(pwd)/fb:/git -e FB_GIT_BRANCH=${FB_GIT_BRANCH}",
+                        command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .")                    
+                    env.FB_FLUENTBIT_RELEASE = commonModule.getFluentBitRelease("${params.fluentbitHost}")
+                    env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")
+                    env.FB_SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
+                    if (env.FB_SERVER_OS != "linux" && env.FB_SERVER_OS != "windows") {
                         currentBuild.result = 'ABORTED'
                         error('Invalid server OS')
                     }
-                    env.OS_VARIANT = commonModule.getOSVariant("${params.fluentbitHost}")
-                    env.BIN_DIR = "${env.SERVER_OS == "linux" ? "/sw_ux/bin" : "E:/sw_nt"}"
-                    env.AGENT_ROOT = "${env.SERVER_OS == "linux" ? "/apps_ux/agents" : "E:/apps_nt/agents"}"
-                    env.TMP_DIR = "${env.SERVER_OS == "linux" ? "/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}" : "E:/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}"}"
-                    env.VAULT_CD_USER_FIELD = commonModule.getVaultCdUserField("${params.fluentbitHost}")
-                    env.VAULT_CD_PASS_FIELD = commonModule.getVaultCdPassField("${params.fluentbitHost}")
-                    env.VAULT_CD_PATH = commonModule.getVaultCdPath("${params.fluentbitHost}")
+                    env.FB_OS_VARIANT = commonModule.getOSVariant("${params.fluentbitHost}")
+                    env.FB_BIN_DIR = "${env.FB_SERVER_OS == "linux" ? "/sw_ux/bin" : "E:/sw_nt"}"
+                    env.FB_AGENT_ROOT = "${env.FB_SERVER_OS == "linux" ? "/apps_ux/agents" : "E:/apps_nt/agents"}"
+                    env.FB_TMP_DIR = "${env.FB_SERVER_OS == "linux" ? "/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}" : "E:/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}"}"
+                    env.FB_VAULT_CD_USER_FIELD = commonModule.getVaultCdUserField("${params.fluentbitHost}")
+                    env.FB_VAULT_CD_PASS_FIELD = commonModule.getVaultCdPassField("${params.fluentbitHost}")
+                    env.FB_VAULT_CD_PATH = commonModule.getVaultCdPath("${params.fluentbitHost}")
+                    def vault_cd_path = "${env.FB_VAULT_CD_PATH}"
+                    def cdCreds = vault.read(vault_cd_path.replaceFirst('/', '/data/'))
+                    def ciCreds = vault.read('groups/data/appdelivery/jenkins-isss-ci')
+                    env.FB_CD_USER = cdCreds[env.FB_VAULT_CD_USER_FIELD]
+                    env.FB_CD_PASS = cdCreds[env.FB_VAULT_CD_PASS_FIELD]
+                    env.FB_CI_USER = ciCreds.username_lowercase
+                    env.FB_CI_PASS = ciCreds.password
+                    vault.revokeToken()
+                    env.HTTP_PROXY_URL = commonModule.getHttpProxy("${params.fluentbitHost}")
+                    env.LOGS_PROXY_DISABLED = commonModule.getLogsProxyDisabled("${params.fluentbitHost}")
+                    env.LOGS_HTTP_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
+                    env.NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
                 }
+                sh 'mkdir $(pwd)/fb/output'
             }
-        }
-        stage('Funbucks') {
-            environment {
-                HTTP_PROXY = commonModule.getHttpProxy("${params.fluentbitHost}")
-                HTTPS_PROXY = commonModule.getHttpProxy("${params.fluentbitHost}")
-                NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-            }
-            steps {
-                sh '''set +x; pass=`echo -n "$PIPELINE_ARTIFACTORY_CREDS_USR:$PIPELINE_ARTIFACTORY_CREDS_PSW" | openssl base64 -A`
-echo "email=$PIPELINE_ARTIFACTORY_CREDS_USR
-always-auth=true
-strict-ssl=false
-registry=http://bwa.nrs.gov.bc.ca/int/artifactory/api/npm/nrs-virtual-npm/
-_auth=$pass
-" > .npmrc'''
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    doGenerateSubmoduleConfigurations: false,
-                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'nr-funbucks']],
-                    gitTool: 'jgit',
-                    submoduleCfg: [],
-                    userRemoteConfigs: [
-                        [
-                            credentialsId: 'f1e16323-de75-4eac-a5a0-f1fc733e3621',
-                            url: 'https://bwa.nrs.gov.bc.ca/int/stash/scm/oneteam/oneteam-nr-funbucks.git'
-                        ]
-                    ]
-                ])
-                sh 'cd nr-funbucks; npm ci'
-            }
-
         }
         stage('Build config') {
             steps {
-                sh "nr-funbucks/bin/dev gen -m -s ${params.fluentbitHost}"
-            }
-        }
-        stage('Get credentials') {
-            steps {
                 script {
-                    env.INTENTION_JSON = sh(
-                        returnStdout: true,
-                        script: "set +x; scripts/broker_intention_open.sh scripts/intention-fb-install.json"
-                    )
-                    sh "scripts/broker_intention_action.sh start login"
-                    env.VAULT_TOKEN = sh(
-                        returnStdout: true,
-                        script: "set +x; scripts/vault_token.sh"
-                    )
-                    env.CD_USER = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_USER_FIELD} ${env.VAULT_CD_PATH}"
-                    )
-                    env.CD_PASS = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=${env.VAULT_CD_PASS_FIELD} ${env.VAULT_CD_PATH}"
-                    )
-                    env.CI_USER = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=username_lowercase groups/appdelivery/jenkins-isss-ci"
-                    )
-                    env.CI_PASS = sh(
-                        returnStdout: true,
-                        script: "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault kv get -field=password groups/appdelivery/jenkins-isss-ci"
-                    )
-                    sh "set +x; VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN /sw_ux/bin/vault token revoke -self"
+                    podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
+                    podman.run("nr-funbucks:${params.imageTag}",
+                        authfile: "${env.AUTHFILE}",
+                        options: "-v \$(pwd)/fb/config:/app/config -v \$(pwd)/fb/output:/app/output",
+                        command: "gen -m -s ${params.fluentbitHost}")
                 }
             }
         }
-        stage('Copy') {
+        stage('Copy files') {
             steps {
-                sh "scripts/broker_intention_action.sh start install"
-                sh "scripts/${SERVER_OS.toLowerCase()}/copy_files.sh"
+                script {
+                    intention.startAction("install")
+                    podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman.run("fb-helper:${params.imageTag}",
+                        authfile: "${env.AUTHFILE}",
+                        options: "-v \$(pwd)/scripts:/app/scripts -v \$(pwd)/fb:/app/fb -v \$(pwd)/files:/app/files -e 'FB_*'",
+                        command: "scripts/${FB_SERVER_OS.toLowerCase()}/copy_files.sh")
+                }
             }
         }
         stage('Stop fluent bit') {
             steps {
-                sh "scripts/${SERVER_OS.toLowerCase()}/stop_fluentbit.sh"
+                script {
+                    podman.run("fb-helper:${params.imageTag}",
+                        authfile: "${env.AUTHFILE}",
+                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR}",
+                        command: "scripts/${FB_SERVER_OS.toLowerCase()}/stop_fluentbit.sh")
+                }
             }
         }
         stage('Remove previous agents') {
             steps {
-                sh "scripts/${SERVER_OS.toLowerCase()}/remove_agents.sh"
-            }
-        }
-        stage('Deploy agents') {
-            environment {
-                HTTP_PROXY_URL = commonModule.getHttpProxy("${params.fluentbitHost}")
-                LOGS_PROXY_DISABLED = commonModule.getLogsProxyDisabled("${params.fluentbitHost}")
-                HTTP_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
-                HTTPS_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
-                NO_PROXY = "https://vault-iit.apps.silver.devops.gov.bc.ca"
-            }
-            steps {
                 script {
-                    if (env.SERVER_OS == "linux") {
-                        sh 'scripts/linux/deploy_agents.sh'
-                    } else if (env.SERVER_OS == "windows") {
-                        sh 'scripts/windows/deploy_agents_base.sh'
-                        sh 'scripts/windows/deploy_agents_service.sh'
-                    }
-                    sh "scripts/broker_intention_action.sh end install"
+                    podman.run("fb-helper:${params.imageTag}",
+                        authfile: "${env.AUTHFILE}",
+                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR}",
+                        command: "scripts/${FB_SERVER_OS.toLowerCase()}/remove_agents.sh")
                 }
             }
         }
-        stage('Get secret') {
+        stage('Deploy agents') {
             steps {
                 script {
-                    sh "scripts/broker_intention_action.sh start provision"
-                    env.WRAPPED_FB_SECRET_ID = sh(
-                        returnStdout: true,
-                        script: "set +x; scripts/vault_secret_id.sh"
-                    )
+                    if (env.FB_SERVER_OS == "linux") {
+                        podman.run("fb-helper:${params.imageTag}",
+                            authfile: "${env.AUTHFILE}",
+                            options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
+                            command: "scripts/linux/deploy_agents.sh")
+                    } else if (env.FB_SERVER_OS == "windows") {
+                        podman.run("fb-helper:${params.imageTag}",
+                            authfile: "${env.AUTHFILE}",
+                            options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
+                            command: "scripts/windows/deploy_agents_base.sh")
+                        podman.run("fb-helper:${params.imageTag}",
+                            authfile: "${env.AUTHFILE}",
+                            options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
+                            command: "scripts/windows/deploy_agents_service.sh")
+                    }
+                    intention.endAction("install")
+                }
+            }
+        }
+        stage('Get secret ID') {
+            steps {
+                script {
+                    intention.startAction("provision")
+                    def wrapped_fb_secret_id = intention.provisionSecretId("provision", FB_ROLE_ID)
+                    env.WRAPPED_FB_SECRET_ID = wrapped_fb_secret_id
                 }
             }
         }
         stage('Start fluent bit') {
             steps {
-                sh "scripts/${SERVER_OS.toLowerCase()}/start_fluentbit_agent.sh"
-                sh "scripts/broker_intention_action.sh end provision"
-                sh "scripts/broker_intention_action.sh end login"
+                script {
+                    podman.run("fb-helper:${params.imageTag}",
+                        authfile: "${env.AUTHFILE}",
+                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e 'WRAPPED_FB_SECRET_ID*'",
+                        command: "scripts/${FB_SERVER_OS.toLowerCase()}/start_fluentbit_agent.sh",
+                        skipPipelineEnv: true)
+                    podman.logout(authfile: "${env.AUTHFILE}")
+                    intention.endAction("provision")
+                    intention.endAction("login")
+                }
             }
         }
     }
     post {
         success {
-            sh "set +x; scripts/broker_intention_close.sh 'success'"
+            script {
+                intention.close(true)
+            }
         }
         unstable {
-            sh "set +x; scripts/broker_intention_close.sh 'failure'"
+            script {
+                if (intention) {
+                    intention.close(false)
+                }
+            }
         }
         failure {
-            sh "set +x; scripts/broker_intention_close.sh 'failure'"
+            script {
+                if (intention) {
+                    intention.close(false)
+                }
+            }
         }
     }
 }
