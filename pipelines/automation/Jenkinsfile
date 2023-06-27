@@ -76,7 +76,7 @@ pipeline {
                             build job: './fluentbit-start-agent',
                                 parameters: [
                                     string(name: 'fluentbitHost', value: String.valueOf(it.server)),
-                                    string(name: 'fluentbitAgent', value: 'prefix-' + String.valueOf(it.agent))
+                                    string(name: 'fluentbitAgent', value: String.valueOf(it.agent))
                                 ],
                                 wait: false
                             agentMap[it.server + it.agent] = true;
