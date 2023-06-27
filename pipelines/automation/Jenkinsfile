@@ -62,7 +62,7 @@ pipeline {
                         "nr-apm-stack-workflow:latest",
                         authfile: "${env.AUTHFILE}",
                         options: "-e 'AWS_*' -e 'OS_*'",
-                        command: "automation-message --dryRun",
+                        command: "automation-message",
                         httpProxy: "http://test-forwardproxy.nrs.bcgov:23128",
                         returnStdout: true
                     )
