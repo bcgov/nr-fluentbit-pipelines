@@ -14,6 +14,16 @@
         "project": "jenkins",
         "environment": "production"
       }
+    },
+    {
+      "action": "package-configure",
+      "id": "configure",
+      "provision": [],
+      "service": {
+        "name": "fluent-bit",
+        "project": "fluent",
+        "environment": "production"
+      }
     }
   ],
   "user": {

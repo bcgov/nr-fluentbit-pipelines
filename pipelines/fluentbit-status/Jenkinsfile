@@ -56,10 +56,12 @@ pipeline {
                     def vault = new Vault(vaultToken)
                     env.VAULT_TOKEN = vaultToken
                     podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    intention.startAction("configure")
                     podman.run("fb-helper:${params.imageTag}",
                         authfile: "${env.AUTHFILE}",
                         options: "-v \$(pwd)/scripts:/app/scripts -v \$(pwd)/fb:/app/fb -v /sw_ux/bin:/sw_ux/bin -e 'FB_*' -e 'VAULT_*'",
                         command: "scripts/fluentbit_status.sh")
+                    intention.endAction("configure")
                     vault.revokeToken()
                     podman.logout(authfile: "${env.AUTHFILE}")
                     intention.endAction("login")

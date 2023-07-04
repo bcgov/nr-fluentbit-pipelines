@@ -26,7 +26,7 @@ def getCauseUserId() {
     if (nameFromUserIdCause != null) {
         return nameFromUserIdCause + "@idir";
     } else {
-        return 'unknown'
+        return 'polaris_cicd@idir'
     }
 }
 
