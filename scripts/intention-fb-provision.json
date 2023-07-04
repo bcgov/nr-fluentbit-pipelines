@@ -1,0 +1,32 @@
+{
+  "event": {
+    "provider": "fluentbit-jenkins-job",
+    "reason": "Job triggered",
+    "url": "JOB_URL"
+  },
+  "actions": [
+    {
+      "action": "server-access",
+      "id": "login",
+      "provision": ["token/self"],
+      "service": {
+        "name": "jenkins-polaris",
+        "project": "jenkins",
+        "environment": "production"
+      }
+    },
+    {
+      "action": "package-provision",
+      "id": "provision",
+      "provision": ["approle/secret-id"],
+      "service": {
+        "name": "fluent-bit",
+        "project": "fluent",
+        "environment": "production"
+      }
+    }
+  ],
+  "user": {
+    "id": "USER_ID"
+  }
+}
