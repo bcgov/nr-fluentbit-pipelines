@@ -41,11 +41,9 @@ pipeline {
                 sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
                 script {
                     commonModule = load "pipelines/common.groovy"
-                    env.FB_FLUENTBIT_RELEASE = commonModule.getFluentBitRelease("${params.fluentbitHost}")
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-install.json'))
                     intention.userId = commonModule.getCauseUserId()
                     intention.eventUrl = env.BUILD_URL
-                    intention.intention.actions[1].package.version = env.FB_FLUENTBIT_RELEASE
                     intention.open(NR_BROKER_JWT)
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
@@ -62,6 +60,7 @@ pipeline {
                         command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .")
                     env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")
                     env.FB_SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
+                    env.FB_FLUENTBIT_RELEASE = commonModule.getFluentBitRelease("${params.fluentbitHost}")
                     if (env.FB_SERVER_OS != "linux" && env.FB_SERVER_OS != "windows") {
                         currentBuild.result = 'ABORTED'
                         error('Invalid server OS')
