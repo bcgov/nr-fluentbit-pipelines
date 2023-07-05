@@ -34,7 +34,7 @@ pipeline {
                 sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
                 script {
                     commonModule = load "pipelines/common.groovy"
-                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-install.json'))
+                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-provision.json'))
                     intention.userId = commonModule.getCauseUserId()
                     intention.eventUrl = env.BUILD_URL
                     intention.open(NR_BROKER_JWT)
