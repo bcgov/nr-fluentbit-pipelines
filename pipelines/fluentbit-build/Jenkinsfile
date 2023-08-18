@@ -1,30 +1,53 @@
-@Library('polaris') import ca.bc.gov.nrids.polaris.Podman
-def podman = new Podman(this, env)
+@Library('polaris')
+import ca.bc.gov.nrids.polaris.Podman
+import ca.bc.gov.nrids.polaris.BrokerIntention
+import ca.bc.gov.nrids.polaris.Vault
 
 pipeline {
     agent {
-        label 'podman'
+        label 'podman-external'
+    }
+    environment {
+        CONFIG_ROLE_ID = credentials('knox-vault-jenkins-aws-automation-role-id')
+        NR_BROKER_JWT = credentials('nr-broker-jwt')
     }
     stages {
         stage('Setup') {
             steps {
                 script {
-                    sh 'rm -r $(pwd)/dropbox'
+                    commonModule = load "pipelines/common.groovy"
+                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-aws-automation.json'))
+                    intention.userId = commonModule.getCauseUserId()
+                    intention.eventUrl = env.BUILD_URL
+                    if (!intention.open(NR_BROKER_JWT)) {
+                        currentBuild.result = 'ABORTED'
+                        error('Intention could not be opened')
+                    }
+                    sh 'rm -f -r $(pwd)/dropbox'
                     sh 'mkdir $(pwd)/dropbox'
                     sh 'chmod 777 $(pwd)/dropbox'
                 }
             }
         }
-        stage('build') {
-            environment {
-                HTTP_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
-                AUTHFILE = "fluent-bit.auth.json"
-            }
+        stage('Get credentials') {
             steps {
                 script {
+                    intention.startAction("login")
+                    def vaultToken = intention.provisionToken("login", CONFIG_ROLE_ID)
+                    def vault = new Vault(vaultToken)
+                    def awsCreds = vault.read("apps/data/prod/jenkins/aws-automation")
+                    env.REGISTRY_USERNAME = awsCreds['artifactory_username']
+                    env.REGISTRY_PASSWORD = awsCreds['artifactory_password']
+                    vault.revokeToken()
+                }
+            }
+        }
+        stage('build') {
+            steps {
+                script {
+                    def podman = new Podman(this, null, "artifacts.developer.gov.bc.ca")
+                    podman.login(options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
                     podman.build(
-                        httpProxy: '\$HTTP_PROXY',
-                        authfile: "${env.AUTHFILE}",
                         options: "--build-arg FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION} -v\$(pwd)/dropbox:/dropbox -f \$(pwd)/agent/Dockerfile-rhel${params.RHEL_VERSION}"
                     )
                     sh 'ls -alh $(pwd)/dropbox'
