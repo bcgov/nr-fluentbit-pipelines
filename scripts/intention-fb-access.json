@@ -14,19 +14,9 @@
         "project": "jenkins",
         "environment": "production"
       }
-    },
-    {
-      "action": "package-provision",
-      "id": "provision",
-      "provision": ["approle/secret-id"],
-      "service": {
-        "name": "fluent-bit",
-        "project": "fluent",
-        "environment": "production"
-      }
     }
   ],
   "user": {
-    "name": "USER_ID"
+    "id": "USER_ID"
   }
 }
