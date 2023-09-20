@@ -35,7 +35,7 @@ pipeline {
                 script {
                     commonModule = load "pipelines/common.groovy"
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
-                    intention.userId = commonModule.getCauseUserId()
+                    intention.userName = commonModule.getCauseUserId()
                     intention.eventUrl = env.BUILD_URL
                     intention.open(NR_BROKER_JWT)
                     intention.startAction("login")
