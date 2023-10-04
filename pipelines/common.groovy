@@ -26,7 +26,7 @@ def getCauseUserId() {
     if (nameFromUserIdCause != null) {
         return nameFromUserIdCause + "@azureidir";
     } else {
-        return 'mbystedt@azureidir'
+        return 'polaris_cicd@azureidir'
     }
 }
 
