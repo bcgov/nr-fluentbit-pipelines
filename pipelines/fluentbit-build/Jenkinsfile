@@ -48,7 +48,7 @@ pipeline {
                     def podman = new Podman(this, null, "artifacts.developer.gov.bc.ca")
                     podman.login(options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
                     podman.build(
-                        options: "--build-arg FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION} -v\$(pwd)/dropbox:/dropbox -f \$(pwd)/agent/Dockerfile-rhel${params.RHEL_VERSION}"
+                        options: "--build-arg FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION} -v \$(pwd)/dropbox:/dropbox -f \$(pwd)/agent/Dockerfile-rhel${params.RHEL_VERSION}"
                     )
                     sh 'ls -alh $(pwd)/dropbox'
                 }
