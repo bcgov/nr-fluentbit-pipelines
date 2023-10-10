@@ -4,20 +4,20 @@ Follow these instructions to run the deployment scripts from your workstation fo
 
 ## Requirements
 
-Vault access to the IDIR service account used for deploying Windows Fluent Bit agents and/or OpenShift access to the nr-broker project. 
+Vault access to the IDIR service account used for deploying Windows Fluent Bit agents and/or OpenShift access to the nr-broker project.
 
 ## Configure environment
 
 Log on to vault using your IDIR credentials and get wrapped Fluent Bit secret ID.
 
 ```
-export VAULT_ADDR=https://vault-iit.apps.silver.devops.gov.bc.ca
+export VAULT_ADDR=https://knox.io.nrs.gov.bc.ca
 export VAULT_TOKEN=$(vault login -method=oidc -format json | jq -r '.auth.client_token')
 ```
 
 At this point you may run the remove, copy, base and service deploy scripts.
 
-Before running the start agent script, you must first log in to OpenShift, populate required environment variables and get a wrapped Fluent Bit secret ID. 
+Before running the start agent script, you must first log in to OpenShift, populate required environment variables and get a wrapped Fluent Bit secret ID.
 
 Log in to OpenShift using oc.
 

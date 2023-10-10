@@ -12,7 +12,7 @@ pipeline {
         label 'podman'
     }
     environment {
-        VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
+        VAULT_ADDR = "https://knox.io.nrs.gov.bc.ca"
         FB_INSTALL_USER="wwwadm"
         FB_RUN_USER="wwwsvr"
         FB_AGENT = "${params.fluentbitAgent}"

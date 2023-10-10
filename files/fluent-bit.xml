@@ -2,7 +2,7 @@
   <id>{{agent}}</id>
   <name>{{agent}}</name>
   <description>{{agent}}</description>
-  <env name="VAULT_ADDR" value="https://vault-iit.apps.silver.devops.gov.bc.ca"/>
+  <env name="VAULT_ADDR" value="https://knox.io.nrs.gov.bc.ca"/>
   <env name="VAULT_TOKEN" value="{{vault_template_token}}"/>
   <env name="AWS_KINESIS_STREAM" value="%AWS_KINESIS_STREAM%"/>
   <env name="AWS_KINESIS_ROLE_ARN" value="%AWS_KINESIS_ROLE_ARN%"/>
