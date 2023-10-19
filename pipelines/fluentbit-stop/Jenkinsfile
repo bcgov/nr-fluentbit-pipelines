@@ -14,7 +14,7 @@ pipeline {
     environment {
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
-        VAULT_ADDR = "https://vault-iit.apps.silver.devops.gov.bc.ca"
+        VAULT_ADDR = "https://knox.io.nrs.gov.bc.ca"
         FB_INSTALL_USER = "wwwadm"
         FB_RUN_USER = "wwwsvr"
         FB_S6_SERVICE_HOME = "/apps_ux/s6_services"

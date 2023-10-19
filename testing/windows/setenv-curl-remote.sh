@@ -16,7 +16,7 @@ if [ -n "$1" ] && [ -n "$2" ]
   export FB_BROKER_URL="https://nr-broker-$2.apps.silver.devops.gov.bc.ca"
   if [ "prod" = $2 ]
   then
-    export VAULT_ADDR="https://vault-iit.apps.silver.devops.gov.bc.ca"
+    export VAULT_ADDR="https://knox.io.nrs.gov.bc.ca"
     export FB_BROKER_URL="https://nr-broker.apps.silver.devops.gov.bc.ca"
   fi
   VAULT_TOKEN=$(vault login -method=oidc -format json -tls-skip-verify | jq -r '.auth.client_token')

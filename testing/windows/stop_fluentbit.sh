@@ -4,7 +4,7 @@ export CD_USER=$(vault kv get -field=username_domainless groups/appdelivery/oraa
 export CD_PASS=$(vault kv get -field=password groups/appdelivery/oraapp_imborapp)
 export HOST="stress.dmz"
 export FB_AGENT_ROOT="E:/apps_nt/agents"
-export VAULT_ADDR="https://vault-iit.apps.silver.devops.gov.bc.ca"
+export VAULT_ADDR="https://knox.io.nrs.gov.bc.ca"
 export VAULT_HOME="E:/sw_nt/vault"
 
 sshpass -p $FB_CD_PASS ssh -q $FB_CD_USER@$FB_HOST powershell.exe -Command -<<EOF
