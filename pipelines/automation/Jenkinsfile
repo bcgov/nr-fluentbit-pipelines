@@ -1,8 +1,8 @@
-@Library('polaris')
+@Library('polaris@feat/useImprovements')
 import ca.bc.gov.nrids.polaris.Podman
 import ca.bc.gov.nrids.polaris.BrokerIntention
 import ca.bc.gov.nrids.polaris.Vault
-import ca.bc.gov.nrids.polaris.JenkinsUtil@feat/useImprovements
+import ca.bc.gov.nrids.polaris.JenkinsUtil
 
 pipeline {
     agent {
