@@ -2,6 +2,7 @@
 import ca.bc.gov.nrids.polaris.Podman
 import ca.bc.gov.nrids.polaris.BrokerIntention
 import ca.bc.gov.nrids.polaris.Vault
+import ca.bc.gov.nrids.polaris.JenkinsUtil
 
 def podman
 def intention
@@ -33,8 +34,10 @@ pipeline {
                 script {
                     commonModule = load "pipelines/common.groovy"
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
-                    intention.userName = commonModule.getCauseUserId()
-                    intention.eventUrl = env.BUILD_URL
+                    intention.setEventDetails(
+                        userName: JenkinsUtil.getCauseUserId(currentBuild),
+                        eventUrl: env.BUILD_URL
+                    )
                     intention.open(NR_BROKER_JWT)
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", CONFIG_ROLE_ID)
@@ -49,7 +52,7 @@ pipeline {
                         authfile: "${env.AUTHFILE}",
                         options: "--security-opt label=disable -v \$(pwd)/fb:/git -e FB_GIT_BRANCH=${FB_GIT_BRANCH}",
                         command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .")
-                    env.FB_CAUSE_USER_ID = commonModule.getCauseUserId()
+                    env.FB_CAUSE_USER_ID = JenkinsUtil.getCauseUserId(currentBuild)
                     env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")
                     env.FB_SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
                     if (env.FB_SERVER_OS != "linux" && env.FB_SERVER_OS != "windows") {

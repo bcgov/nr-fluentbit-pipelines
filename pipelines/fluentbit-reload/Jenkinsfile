@@ -2,6 +2,7 @@
 import ca.bc.gov.nrids.polaris.Podman
 import ca.bc.gov.nrids.polaris.BrokerIntention
 import ca.bc.gov.nrids.polaris.Vault
+import ca.bc.gov.nrids.polaris.JenkinsUtil
 
 def podman
 def intention
@@ -35,8 +36,10 @@ pipeline {
                 script {
                     commonModule = load "pipelines/common.groovy"
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
-                    intention.userName = commonModule.getCauseUserId()
-                    intention.eventUrl = env.BUILD_URL
+                    intention.setEventDetails(
+                        userName: JenkinsUtil.getCauseUserId(currentBuild),
+                        eventUrl: env.BUILD_URL
+                    )
                     intention.open(NR_BROKER_JWT)
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
