@@ -20,16 +20,6 @@ def getLogsProxyDisabled(fluentbitHost) {
     return props.logsProxyDisabled
 }
 
-def getCauseUserId() {
-    def userIdCause = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause');
-    final String nameFromUserIdCause = userIdCause != null && userIdCause[0] != null ? userIdCause[0].userId : null;
-    if (nameFromUserIdCause != null) {
-        return nameFromUserIdCause + "@azureidir";
-    } else {
-        return 'mbystedt@azureidir'
-    }
-}
-
 def getServerOS(fluentbitHost) {
     def props = readJSON file: "fb/config/server/${fluentbitHost}.json"
     return props.os
