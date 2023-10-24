@@ -40,6 +40,8 @@ pipeline {
                     def vault = new Vault(vaultToken)
                     vault.readToObject("apps/data/prod/jenkins/aws-automation", env, keyTransform: { key -> key.toUpperCase() })
                     env.AWS_ACCESS_KEY_ID = env.AWS_ACCESS_KEY
+                    env.REGISTRY_USERNAME = env.ARTIFACTORY_USERNAME
+                    env.REGISTRY_PASSWORD = env.ARTIFACTORY_PASSWORD
                     // env.AWS_ACCOUNT_NUMBER = awsCreds['aws_account_number']
                     // env.AWS_ACCESS_KEY_ID = awsCreds['aws_access_key']
                     // env.AWS_SECRET_ACCESS_KEY = awsCreds['aws_secret_access_key']
