@@ -10,7 +10,7 @@ def commonModule = [:]
 
 pipeline {
     agent {
-        label 'podman'
+        label Podman.AGENT_LABEL_APP
     }
     environment {
         FB_PIPELINE_ARTIFACTORY_CREDS = credentials('ci-user')

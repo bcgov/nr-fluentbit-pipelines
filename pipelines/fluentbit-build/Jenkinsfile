@@ -2,10 +2,11 @@
 import ca.bc.gov.nrids.polaris.Podman
 import ca.bc.gov.nrids.polaris.BrokerIntention
 import ca.bc.gov.nrids.polaris.Vault
+import ca.bc.gov.nrids.polaris.JenkinsUtil
 
 pipeline {
     agent {
-        label 'podman-external'
+        label Podman.AGENT_LABEL_WEB
     }
     environment {
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-aws-automation-role-id')

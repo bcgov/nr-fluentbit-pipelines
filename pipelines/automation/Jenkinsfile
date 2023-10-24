@@ -6,7 +6,7 @@ import ca.bc.gov.nrids.polaris.JenkinsUtil
 
 pipeline {
     agent {
-        label 'podman'
+        label Podman.AGENT_LABEL_APP
     }
     environment {
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-aws-automation-role-id')
@@ -42,12 +42,6 @@ pipeline {
                     env.AWS_ACCESS_KEY_ID = env.AWS_ACCESS_KEY
                     env.REGISTRY_USERNAME = env.ARTIFACTORY_USERNAME
                     env.REGISTRY_PASSWORD = env.ARTIFACTORY_PASSWORD
-                    // env.AWS_ACCOUNT_NUMBER = awsCreds['aws_account_number']
-                    // env.AWS_ACCESS_KEY_ID = awsCreds['aws_access_key']
-                    // env.AWS_SECRET_ACCESS_KEY = awsCreds['aws_secret_access_key']
-                    // env.AWS_ASSUME_ROLE = awsCreds['aws_assume_role']
-                    // env.REGISTRY_USERNAME = awsCreds['artifactory_username']
-                    // env.REGISTRY_PASSWORD = awsCreds['artifactory_password']
                     env.AWS_REGION = "ca-central-1"
                     env.AWS_DEFAULT_REGION = "ca-central-1"
                     env.OS_URL = "apm.io.nrs.gov.bc.ca"

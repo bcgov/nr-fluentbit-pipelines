@@ -9,7 +9,7 @@ def intention
 
 pipeline {
     agent {
-        label 'podman'
+        label Podman.AGENT_LABEL_APP
     }
     environment {
         VAULT_ADDR = "https://knox.io.nrs.gov.bc.ca"
