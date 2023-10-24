@@ -45,7 +45,8 @@ pipeline {
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-install.json'))
                     intention.setEventDetails(
                         userName: JenkinsUtil.getCauseUserId(currentBuild),
-                        eventUrl: env.BUILD_URL
+                        eventUrl: env.BUILD_URL,
+                        packageInstallationVersion: commonModule.getFluentBitRelease("${params.fluentbitHost}")
                     )
                     intention.open(NR_BROKER_JWT)
                     intention.startAction("login")
