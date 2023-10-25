@@ -41,6 +41,7 @@ pipeline {
                     env.REGISTRY_USERNAME = awsCreds['artifactory_username']
                     env.REGISTRY_PASSWORD = awsCreds['artifactory_password']
                     vault.revokeToken()
+                    intention.endAction("login")
                 }
             }
         }

@@ -13,7 +13,6 @@ pipeline {
         label Podman.AGENT_LABEL_APP
     }
     environment {
-        VAULT_ADDR = "https://knox.io.nrs.gov.bc.ca"
         FB_INSTALL_USER="wwwadm"
         FB_RUN_USER="wwwsvr"
         FB_AGENT = "${params.fluentbitAgent}"
@@ -83,7 +82,7 @@ pipeline {
                     podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
                     podman.run("fb-helper:${params.imageTag}",
                         authfile: "${env.AUTHFILE}",
-                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e 'WRAPPED_FB_SECRET_ID*'",
+                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL} -e 'WRAPPED_FB_SECRET_ID*'",
                         command: "scripts/${FB_SERVER_OS.toLowerCase()}/start_fluentbit_agent.sh")
                     podman.logout(authfile: "${env.AUTHFILE}")
                     intention.endAction("provision")

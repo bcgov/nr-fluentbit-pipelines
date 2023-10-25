@@ -15,7 +15,6 @@ pipeline {
     environment {
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
-        VAULT_ADDR = "https://knox.io.nrs.gov.bc.ca"
         FB_INSTALL_USER = "wwwadm"
         FB_RUN_USER = "wwwsvr"
         FB_S6_SERVICE_HOME = "/apps_ux/s6_services"
@@ -79,7 +78,7 @@ pipeline {
                     intention.startAction("configure")
                     podman.run("fb-helper:${params.imageTag}",
                         authfile: "${env.AUTHFILE}",
-                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR}",
+                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL}",
                         command: "scripts/${FB_SERVER_OS.toLowerCase()}/stop_fluentbit.sh")
                     intention.endAction("configure")
                     podman.logout(authfile: "${env.AUTHFILE}")

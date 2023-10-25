@@ -12,7 +12,6 @@ pipeline {
         label Podman.AGENT_LABEL_APP
     }
     environment {
-        VAULT_ADDR = "https://knox.io.nrs.gov.bc.ca"
         FB_AGENT_ROOT = "/apps_ux/agents"
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')

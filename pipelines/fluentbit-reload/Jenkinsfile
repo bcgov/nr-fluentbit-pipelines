@@ -13,7 +13,6 @@ pipeline {
         label Podman.AGENT_LABEL_APP
     }
     environment {
-        VAULT_ADDR = "https://knox.io.nrs.gov.bc.ca"
         FB_RUN_USER="wwwsvr"
         FB_S6_SERVICE_HOME = "/apps_ux/s6_services"
         FB_FLUENTBIT_DB = "/apps_data/agents/fluent-bit/fluent-bit-logs.db"

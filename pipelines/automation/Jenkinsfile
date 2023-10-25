@@ -6,14 +6,11 @@ import ca.bc.gov.nrids.polaris.JenkinsUtil
 
 pipeline {
     agent {
-        label Podman.AGENT_LABEL_APP
+        label Podman.AGENT_LABEL_WEB
     }
     environment {
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-aws-automation-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
-        HTTP_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
-        HTTPS_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
-        NO_PROXY = "https://knox.io.nrs.gov.bc.ca"
         AUTHFILE = "fluent-bit.auth.json"
     }
     stages {
