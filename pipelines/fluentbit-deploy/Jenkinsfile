@@ -86,7 +86,7 @@ pipeline {
                     env.HTTP_PROXY_URL = commonModule.getHttpProxy("${params.fluentbitHost}")
                     env.LOGS_PROXY_DISABLED = commonModule.getLogsProxyDisabled("${params.fluentbitHost}")
                     env.LOGS_HTTP_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
-                    env.NO_PROXY = Vault.KNOX_URL
+                    env.NO_PROXY = "${Vault.KNOX_URL}"
                 }
                 sh 'mkdir $(pwd)/fb/output'
             }
