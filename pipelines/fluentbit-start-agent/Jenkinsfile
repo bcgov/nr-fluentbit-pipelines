@@ -2,6 +2,7 @@
 import ca.bc.gov.nrids.polaris.Podman
 import ca.bc.gov.nrids.polaris.BrokerIntention
 import ca.bc.gov.nrids.polaris.Vault
+import ca.bc.gov.nrids.polaris.JenkinsUtil
 
 def podman
 def intention
@@ -9,10 +10,9 @@ def commonModule = [:]
 
 pipeline {
     agent {
-        label 'podman'
+        label Podman.AGENT_LABEL_APP
     }
     environment {
-        VAULT_ADDR = "https://knox.io.nrs.gov.bc.ca"
         FB_INSTALL_USER="wwwadm"
         FB_RUN_USER="wwwsvr"
         FB_AGENT = "${params.fluentbitAgent}"
@@ -35,8 +35,10 @@ pipeline {
                 script {
                     commonModule = load "pipelines/common.groovy"
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-provision.json'))
-                    intention.userName = commonModule.getCauseUserId()
-                    intention.eventUrl = env.BUILD_URL
+                    intention.setEventDetails(
+                        userName: JenkinsUtil.getCauseUserId(currentBuild),
+                        eventUrl: env.BUILD_URL
+                    )
                     intention.open(NR_BROKER_JWT)
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
@@ -80,7 +82,7 @@ pipeline {
                     podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
                     podman.run("fb-helper:${params.imageTag}",
                         authfile: "${env.AUTHFILE}",
-                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${VAULT_ADDR} -e 'WRAPPED_FB_SECRET_ID*'",
+                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL} -e 'WRAPPED_FB_SECRET_ID*'",
                         command: "scripts/${FB_SERVER_OS.toLowerCase()}/start_fluentbit_agent.sh")
                     podman.logout(authfile: "${env.AUTHFILE}")
                     intention.endAction("provision")

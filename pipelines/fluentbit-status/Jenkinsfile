@@ -2,17 +2,16 @@
 import ca.bc.gov.nrids.polaris.Podman
 import ca.bc.gov.nrids.polaris.BrokerIntention
 import ca.bc.gov.nrids.polaris.Vault
+import ca.bc.gov.nrids.polaris.JenkinsUtil
 
 def podman
 def intention
-def commonModule = [:]
 
 pipeline {
     agent {
-        label 'podman'
+        label Podman.AGENT_LABEL_APP
     }
     environment {
-        VAULT_ADDR = "https://knox.io.nrs.gov.bc.ca"
         FB_AGENT_ROOT = "/apps_ux/agents"
         CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
@@ -28,10 +27,11 @@ pipeline {
             steps {
                 sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
                 script {
-                    commonModule = load "pipelines/common.groovy"
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
-                    intention.userName = commonModule.getCauseUserId()
-                    intention.eventUrl = env.BUILD_URL
+                    intention.setEventDetails(
+                        userName: JenkinsUtil.getCauseUserId(currentBuild),
+                        eventUrl: env.BUILD_URL
+                    )
                     intention.open(NR_BROKER_JWT, ttl: 600)
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", CONFIG_ROLE_ID)
