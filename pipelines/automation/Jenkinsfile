@@ -22,7 +22,7 @@ pipeline {
                 script {
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-aws-automation.json'))
                     intention.setEventDetails(
-                        userName: JenkinsUtil.getCauseUserId(currentBuild),
+                        userName: JenkinsUtil.getCauseUserId(currentBuild, 'mbystedt@azureidir'),
                         eventUrl: env.BUILD_URL
                     )
                     if (!intention.open(NR_BROKER_JWT)) {
