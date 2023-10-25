@@ -36,7 +36,7 @@ pipeline {
                     commonModule = load "pipelines/common.groovy"
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-provision.json'))
                     intention.setEventDetails(
-                        userName: JenkinsUtil.getCauseUserId(currentBuild),
+                        userName: JenkinsUtil.getCauseUserId(currentBuild, 'mbystedt@azureidir'),
                         eventUrl: env.BUILD_URL
                     )
                     intention.open(NR_BROKER_JWT)
