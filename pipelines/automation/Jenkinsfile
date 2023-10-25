@@ -13,7 +13,7 @@ pipeline {
         NR_BROKER_JWT = credentials('nr-broker-jwt')
         HTTP_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
         HTTPS_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
-        NO_PROXY = Vault.KNOX_URL
+        NO_PROXY = "${Vault.KNOX_URL}"
         AUTHFILE = "fluent-bit.auth.json"
     }
     stages {
