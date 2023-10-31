@@ -55,6 +55,7 @@ pipeline {
                     def vaultToken = intention.provisionToken("login", CONFIG_ROLE_ID)
                     def vault = new Vault(vaultToken)
                     env.VAULT_TOKEN = vaultToken
+                    env.VAULT_ADDR = "${Vault.KNOX_URL}"
                     podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     intention.startAction("configure")
                     podman.run("fb-helper:${params.imageTag}",
