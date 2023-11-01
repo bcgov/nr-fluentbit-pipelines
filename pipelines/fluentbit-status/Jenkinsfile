@@ -24,8 +24,7 @@ pipeline {
                 HTTP_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
                 FB_GIT_BRANCH = "${params.fbGitBranch}"
             }
-            steps {
-                sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
+            steps {                
                 script {
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
                     intention.setEventDetails(
@@ -34,18 +33,8 @@ pipeline {
                     )
                     intention.open(NR_BROKER_JWT, ttl: 600)
                     intention.startAction("login")
-                    def vaultToken = intention.provisionToken("login", CONFIG_ROLE_ID)
-                    def vault = new Vault(vaultToken)
-                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifactory')
-                    env.REGISTRY_USERNAME = registryCreds['username']
-                    env.REGISTRY_PASSWORD = registryCreds['password']
-                    podman = new Podman(this)
-                    podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
-                    podman.run("alpine/git:latest",
-                        httpProxy: '\$HTTP_PROXY',
-                        authfile: "${env.AUTHFILE}",
-                        options: "--security-opt label=disable -v \$(pwd)/fb:/git -e FB_GIT_BRANCH=${FB_GIT_BRANCH}",
-                        command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .")
+                    sh 'rm -rf fb && mkdir fb'
+                    sh 'git clone -b main https://github.com/bcgov-nr/nr-funbucks.git fb'
                 }
             }
         }
@@ -54,9 +43,13 @@ pipeline {
                 script {
                     def vaultToken = intention.provisionToken("login", CONFIG_ROLE_ID)
                     def vault = new Vault(vaultToken)
+                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifactory')
+                    env.REGISTRY_USERNAME = registryCreds['username']
+                    env.REGISTRY_PASSWORD = registryCreds['password']
                     env.VAULT_TOKEN = vaultToken
                     env.VAULT_ADDR = "${Vault.KNOX_URL}"
                     podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
                     intention.startAction("configure")
                     podman.run("fb-helper:${params.imageTag}",
                         authfile: "${env.AUTHFILE}",
