@@ -29,8 +29,9 @@ pipeline {
                 FB_GIT_BRANCH = "${params.fbGitBranch}"
             }
             steps {
-                sh 'rm -rf $(pwd)/fb && mkdir $(pwd)/fb'
                 script {
+                    sh 'rm -rf fb && mkdir fb'
+                    sh 'git clone -b main https://github.com/bcgov-nr/nr-funbucks.git fb'
                     commonModule = load "pipelines/common.groovy"
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
                     intention.setEventDetails(
@@ -44,13 +45,6 @@ pipeline {
                     def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifactory')
                     env.REGISTRY_USERNAME = registryCreds['username']
                     env.REGISTRY_PASSWORD = registryCreds['password']
-                    podman = new Podman(this)
-                    podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
-                    podman.run("alpine/git:latest",
-                        httpProxy: '\$HTTP_PROXY',
-                        authfile: "${env.AUTHFILE}",
-                        options: "--security-opt label=disable -v \$(pwd)/fb:/git -e FB_GIT_BRANCH=${FB_GIT_BRANCH}",
-                        command: "clone -b ${FB_GIT_BRANCH} https://github.com/bcgov-nr/nr-funbucks.git .")
                     env.FB_CAUSE_USER_ID = JenkinsUtil.getCauseUserId(currentBuild)
                     env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")
                     env.FB_SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
@@ -75,6 +69,7 @@ pipeline {
             steps {
                 script {
                     podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
                     intention.startAction("configure")
                     podman.run("fb-helper:${params.imageTag}",
                         authfile: "${env.AUTHFILE}",
