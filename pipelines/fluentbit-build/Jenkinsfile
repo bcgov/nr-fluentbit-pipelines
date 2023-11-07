@@ -9,14 +9,14 @@ pipeline {
         label Podman.AGENT_LABEL_WEB
     }
     environment {
-        CONFIG_ROLE_ID = credentials('knox-vault-jenkins-aws-automation-role-id')
+        APP_ROLE_ID = credentials('knox-vault-fluentbit-agent-build-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
     }
     stages {
         stage('Setup') {
             steps {
                 script {
-                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-aws-automation.json'))
+                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-agent-build.json'))
                     intention.setEventDetails(
                         userName: JenkinsUtil.getCauseUserId(currentBuild),
                         url: env.BUILD_URL
@@ -35,11 +35,11 @@ pipeline {
             steps {
                 script {
                     intention.startAction("login")
-                    def vaultToken = intention.provisionToken("login", CONFIG_ROLE_ID)
+                    def vaultToken = intention.provisionToken("login", APP_ROLE_ID)
                     def vault = new Vault(vaultToken)
-                    def awsCreds = vault.read("apps/data/prod/jenkins/aws-automation")
-                    env.REGISTRY_USERNAME = awsCreds['artifactory_username']
-                    env.REGISTRY_PASSWORD = awsCreds['artifactory_password']
+                    def buildCreds = vault.read("apps/data/prod/fluent/fluentbit-agent-build")
+                    env.ARTIFACTORY_USERNAME = buildCreds['artifactory_username']
+                    env.ARTIFACTORY_PASSWORD = buildCreds['artifactory_password']
                     vault.revokeToken()
                     intention.endAction("login")
                 }
@@ -49,13 +49,13 @@ pipeline {
             steps {
                 script {
                     def podman = new Podman(this, null, "artifacts.developer.gov.bc.ca")
-                    podman.login(options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
+                    podman.login(options: "-u ${env.ARTIFACTORY_USERNAME} -p ${env.ARTIFACTORY_PASSWORD}")
                     podman.build(
                         options: "--build-arg FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION} -v \$(pwd)/dropbox:/dropbox -f \$(pwd)/agent/Dockerfile-rhel${params.RHEL_VERSION}"
                     )
-                    sh 'ls -alh $(pwd)/dropbox'
+                    sh "ls -alh \$(pwd)/dropbox/${params.FLUENT_BIT_VERSION}"
 
-                    wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: env.ARTIFACTORY_CREDS_USR, password: ARTIFACTORY_CREDS_USR], [var: env.ARTIFACTORY_CREDS_PSW, password: ARTIFACTORY_CREDS_PSW]]]) {
+                    wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: env.ARTIFACTORY_USERNAME, password: ARTIFACTORY_USERNAME], [var: env.ARTIFACTORY_PASSWORD, password: ARTIFACTORY_PASSWORD]]]) {
                         withEnv(["FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION}", "RHEL_VERSION=${params.RHEL_VERSION}"]) {
                             commonModule.putFile(${ARTIFACTORY_CREDS_USR}, ${ARTIFACTORY_CREDS_PSW}, "https://bwa.nrs.gov.bc.ca/int/artifactory/ext-binaries-local/fluent/fluent-bit/${FLUENT_BIT_VERSION}/fluent-bit-${RHEL_VERSION}.tar.gz", "fluent-bit-${params.RHEL_VERSION}.tar.gz")
                         }

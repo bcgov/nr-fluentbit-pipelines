@@ -1,0 +1,22 @@
+{
+  "event": {
+    "provider": "fluentbit-jenkins-job",
+    "reason": "Job triggered",
+    "url": "JOB_URL"
+  },
+  "actions": [
+    {
+      "action": "server-access",
+      "id": "login",
+      "provision": ["token/self"],
+      "service": {
+        "name": "fluentbit-agent-build",
+        "project": "fluent",
+        "environment": "production"
+      }
+    }
+  ],
+  "user": {
+    "name": "USER_ID"
+  }
+}

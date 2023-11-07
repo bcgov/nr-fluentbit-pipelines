@@ -26,7 +26,7 @@ RUN cd build && \
     make install
 
 WORKDIR /dropbox
-RUN mkdir ./fluent-bit && \
+RUN mkdir ./fluent-bit ./${FLUENT_BIT_VERSION} && \
     cp /usr/local/bin/fluent-bit /usr/lib64/libpq.so.5 /usr/lib64/libyaml-0.so.2 ./fluent-bit && \
-    tar -czvf fluent-bit-rhel8.tar.gz fluent-bit && \
+    tar -czvf ${FLUENT_BIT_VERSION}/fluent-bit-rhel8.tar.gz fluent-bit && \
     rm -rf ./fluent-bit
