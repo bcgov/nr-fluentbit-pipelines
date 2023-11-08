@@ -10,9 +10,14 @@
       "id": "login",
       "provision": ["token/self"],
       "service": {
-        "name": "jenkins-polaris",
-        "project": "jenkins",
-        "environment": "production"
+        "name": "fluent-bit",
+        "project": "fluent",
+        "environment": "production",
+        "target": {
+          "name": "jenkins-polaris",
+          "project": "jenkins",
+          "environment": "production"
+        }
       }
     },
     {
