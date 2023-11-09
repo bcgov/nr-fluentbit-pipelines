@@ -29,7 +29,7 @@ pipeline {
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
                     intention.setEventDetails(
                         userName: JenkinsUtil.getCauseUserId(currentBuild),
-                        eventUrl: env.BUILD_URL
+                        url: env.BUILD_URL
                     )
                     intention.open(NR_BROKER_JWT, ttl: 600)
                     intention.startAction("login")

@@ -19,7 +19,7 @@ pipeline {
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-aws-automation.json'))
                     intention.setEventDetails(
                         userName: JenkinsUtil.getCauseUserId(currentBuild),
-                        eventUrl: env.BUILD_URL
+                        url: env.BUILD_URL
                     )
                     if (!intention.open(NR_BROKER_JWT)) {
                         currentBuild.result = 'ABORTED'
