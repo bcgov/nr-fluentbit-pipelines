@@ -59,6 +59,5 @@ def putFile(username, password, apiURL, filePath) {
     )
 
     println "Response Code: ${response.status}"
-    println "Response Data: ${response.data}"
 }
 return this
