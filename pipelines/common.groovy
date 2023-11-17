@@ -45,6 +45,4 @@ def getVaultCdPath(fluentbitHost) {
     return props.vault_cd_path
 }
 
-def putFile(username, password, apiURL, filePath) {
-}
 return this

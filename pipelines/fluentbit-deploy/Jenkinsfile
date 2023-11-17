@@ -133,6 +133,8 @@ pipeline {
             steps {
                 script {
                     if (env.FB_SERVER_OS == "linux") {
+                        env.FB_ARTIFACTORY_USERNAME = "${env.REGISTRY_USERNAME}"
+                        env.FB_ARTIFACTORY_PASSWORD = "${env.REGISTRY_PASSWORD}"
                         podman.run("fb-helper:${params.imageTag}",
                             authfile: "${env.AUTHFILE}",
                             options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
