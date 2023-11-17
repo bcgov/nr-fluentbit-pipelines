@@ -54,6 +54,12 @@ pipeline {
                         options: "--build-arg FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION} -v \$(pwd)/dropbox:/dropbox -f \$(pwd)/agent/Dockerfile-rhel${params.RHEL_VERSION}"
                     )
                     sh 'ls -alh $(pwd)/dropbox'
+
+                    wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: env.ARTIFACTORY_CREDS_USR, password: ARTIFACTORY_CREDS_USR], [var: env.ARTIFACTORY_CREDS_PSW, password: ARTIFACTORY_CREDS_PSW]]]) {
+                        withEnv(["FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION}", "RHEL_VERSION=${params.RHEL_VERSION}"]) {
+                            commonModule.putFile(${ARTIFACTORY_CREDS_USR}, ${ARTIFACTORY_CREDS_PSW}, "https://bwa.nrs.gov.bc.ca/int/artifactory/ext-binaries-local/fluent/fluent-bit/${FLUENT_BIT_VERSION}/fluent-bit-${RHEL_VERSION}.tar.gz", "fluent-bit-${params.RHEL_VERSION}.tar.gz")
+                        }
+                    }
                 }
             }
         }
