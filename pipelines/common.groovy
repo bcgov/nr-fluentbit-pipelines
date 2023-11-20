@@ -46,18 +46,18 @@ def getVaultCdPath(fluentbitHost) {
 }
 
 def putFile(username, password, apiURL, filePath) {
-    @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.1')
-    import groovyx.net.http.RESTClient
+    // @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.1')
+    // import groovyx.net.http.RESTClient
 
-    def client = new RESTClient(apiUrl)
-    client.auth.basic(username, password)
+    // def client = new RESTClient(apiUrl)
+    // client.auth.basic(username, password)
 
-    def response = client.put(
-        path: '',
-        body: new File(filePath),
-        requestContentType: 'application/octet-stream'
-    )
+    // def response = client.put(
+    //     path: '',
+    //     body: new File(filePath),
+    //     requestContentType: 'application/octet-stream'
+    // )
 
-    println "Response Code: ${response.status}"
+    // println "Response Code: ${response.status}"
 }
 return this
