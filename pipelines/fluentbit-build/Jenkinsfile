@@ -52,7 +52,7 @@ pipeline {
                     podman.build(
                         options: "--build-arg FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION} -v \$(pwd)/dropbox:/dropbox -f \$(pwd)/agent/Dockerfile-rhel${params.RHEL_VERSION}"
                     )
-                    sh "ls -alh \$(pwd)/dropbox/${params.FLUENT_BIT_VERSION}"
+                    // sh "ls -alh \$(pwd)/dropbox/${params.FLUENT_BIT_VERSION}"
                     podman = new Podman(this, null, "releases-docker.jfrog.io/jfrog")
                     wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: env.ARTIFACTORY_USERNAME, password: ARTIFACTORY_USERNAME], [var: env.ARTIFACTORY_PASSWORD, password: ARTIFACTORY_PASSWORD]]]) {
                         withEnv(["FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION}", "RHEL_VERSION=${params.RHEL_VERSION}"]) {
