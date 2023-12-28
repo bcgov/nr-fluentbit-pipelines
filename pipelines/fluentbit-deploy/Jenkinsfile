@@ -173,27 +173,23 @@ pipeline {
                     podman.logout(authfile: "${env.AUTHFILE}")
                     intention.endAction("provision")
                     intention.endAction("login")
+                    println intention.close(true)
                 }
             }
         }
     }
     post {
-        success {
-            script {
-                intention.close(true)
-            }
-        }
         unstable {
             script {
                 if (intention) {
-                    intention.close(false)
+                    println intention.close(false)
                 }
             }
         }
         failure {
             script {
                 if (intention) {
-                    intention.close(false)
+                    println intention.close(false)
                 }
             }
         }
