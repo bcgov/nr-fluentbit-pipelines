@@ -52,17 +52,13 @@ pipeline {
                     podman.build(
                         options: "--build-arg FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION} -v \$(pwd)/dropbox:/dropbox -f \$(pwd)/agent/Dockerfile-rhel${params.RHEL_VERSION}"
                     )
-                    def path = ""
-                    if ( params.RHEL_VERSION != '7') {
-                        path = "/${params.FLUENT_BIT_VERSION}"
-                    }                    
-                    sh "ls -alh \$(pwd)/dropbox${path}"
+                    sh "ls -alh \$(pwd)/dropbox/${params.FLUENT_BIT_VERSION}"
                     podman = new Podman(this, null, "releases-docker.jfrog.io/jfrog")
                     wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: env.ARTIFACTORY_USERNAME, password: ARTIFACTORY_USERNAME], [var: env.ARTIFACTORY_PASSWORD, password: ARTIFACTORY_PASSWORD]]]) {
                         withEnv(["FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION}", "RHEL_VERSION=${params.RHEL_VERSION}"]) {
                             podman.run("jfrog-cli-v2-jf:2.52.0",
                                 options: "-v \$(pwd)/dropbox:/dropbox -e ARTIFACTORY_*",
-                                command: 'jf rt upload "/dropbox${path}/fluent-bit-rhel${RHEL_VERSION}.tar.gz" \
+                                command: 'jf rt upload "/dropbox/${FLUENT_BIT_VERSION}/fluent-bit-rhel${RHEL_VERSION}.tar.gz" \
                                     cc20-fluent-generic-local/fluent-bit/${FLUENT_BIT_VERSION}/ \
                                     --flat=true \
                                     --url=https://artifacts.developer.gov.bc.ca/artifactory \
