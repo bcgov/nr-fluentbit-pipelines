@@ -26,7 +26,7 @@ if ("$HTTP_PROXY".Length -gt 0) {
   Invoke-WebRequest -Proxy $HTTP_PROXY -Uri "https://releases.hashicorp.com/vault/${FB_VAULT_RELEASE}/vault_${FB_VAULT_RELEASE}_windows_amd64.zip" -OutFile "$FB_TMP_DIR/bin/vault.zip"
   Invoke-WebRequest -Proxy $HTTP_PROXY -Uri "https://releases.hashicorp.com/envconsul/${FB_ENVCONSUL_RELEASE}/envconsul_${FB_ENVCONSUL_RELEASE}_windows_amd64.zip" -OutFile "$FB_TMP_DIR/bin/envconsul.zip"
   Invoke-WebRequest -Proxy $HTTP_PROXY -Uri "https://github.com/stedolan/jq/releases/download/jq-${FB_JQ_RELEASE}/jq-win64.exe" -OutFile "$FB_BIN_DIR/jq/jq-win64.exe"
-  Invoke-WebRequest -Proxy $HTTP_PROXY -Uri "https://fluentbit.io/releases/${FB_FLUENTBIT_RELEASE_MAJOR_MINOR}/fluent-bit-${FB_FLUENTBIT_RELEASE}-win64.zip" -OutFile "$FB_TMP_DIR/bin/fluent-bit.zip"
+  Invoke-WebRequest -Proxy $HTTP_PROXY -Uri "https://packages.fluentbit.io/windows/fluent-bit-${FB_FLUENTBIT_RELEASE}-win64.zip" -OutFile "$FB_TMP_DIR/bin/fluent-bit.zip"
   Invoke-WebRequest -Proxy $HTTP_PROXY -Uri "https://www.sqlite.org/2022/sqlite-tools-win32-x86-3390300.zip" -OutFile "$FB_TMP_DIR/bin/sqlite.zip"
   Invoke-WebRequest -Proxy $HTTP_PROXY -Uri "https://github.com/winsw/winsw/releases/download/${FB_WINSW_RELEASE}/WinSW-x64.exe" -OutFile "$FB_TMP_DIR/bin/WinSW-x64.exe"
 } else {
@@ -34,7 +34,7 @@ if ("$HTTP_PROXY".Length -gt 0) {
   Invoke-WebRequest -Uri "https://releases.hashicorp.com/vault/${FB_VAULT_RELEASE}/vault_${FB_VAULT_RELEASE}_windows_amd64.zip" -OutFile "$FB_TMP_DIR/bin/vault.zip"
   Invoke-WebRequest -Uri "https://releases.hashicorp.com/envconsul/${FB_ENVCONSUL_RELEASE}/envconsul_${FB_ENVCONSUL_RELEASE}_windows_amd64.zip" -OutFile "$FB_TMP_DIR/bin/envconsul.zip"
   Invoke-WebRequest -Uri "https://github.com/stedolan/jq/releases/download/jq-${FB_JQ_RELEASE}/jq-win64.exe" -OutFile "$FB_BIN_DIR/jq/jq-win64.exe"
-  Invoke-WebRequest -Uri "https://fluentbit.io/releases/${FB_FLUENTBIT_RELEASE_MAJOR_MINOR}/fluent-bit-${FB_FLUENTBIT_RELEASE}-win64.zip" -OutFile "$FB_TMP_DIR/bin/fluent-bit.zip"
+  Invoke-WebRequest -Uri "https://packages.fluentbit.io/windows/fluent-bit-${FB_FLUENTBIT_RELEASE}-win64.zip" -OutFile "$FB_TMP_DIR/bin/fluent-bit.zip"
   Invoke-WebRequest -Uri "https://www.sqlite.org/2022/sqlite-tools-win32-x86-3390300.zip" -OutFile "$FB_TMP_DIR/bin/sqlite.zip"
   Invoke-WebRequest -Uri "https://github.com/winsw/winsw/releases/download/${FB_WINSW_RELEASE}/WinSW-x64.exe" -OutFile "$FB_TMP_DIR/bin/WinSW-x64.exe"
 }
