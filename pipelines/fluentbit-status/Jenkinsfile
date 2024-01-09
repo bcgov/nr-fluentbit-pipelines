@@ -53,7 +53,7 @@ pipeline {
                     intention.startAction("configure")
                     podman.run("fb-helper:${params.imageTag}",
                         authfile: "${env.AUTHFILE}",
-                        options: "-v \$(pwd)/scripts:/app/scripts -v \$(pwd)/fb:/app/fb -v /sw_ux/bin:/sw_ux/bin -e 'FB_*' -e 'VAULT_*'",
+                        options: "-v \$(pwd)/files/ssh-config:/app/ssh-config -v \$(pwd)/scripts:/app/scripts -v \$(pwd)/fb:/app/fb -v /sw_ux/bin:/sw_ux/bin -e 'FB_*' -e 'VAULT_*'",
                         command: "scripts/fluentbit_status.sh")
                     intention.endAction("configure")
                     vault.revokeToken()

@@ -104,7 +104,7 @@ pipeline {
                     podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.run("fb-helper:${params.imageTag}",
                         authfile: "${env.AUTHFILE}",
-                        options: "-v \$(pwd)/scripts:/app/scripts -v \$(pwd)/fb:/app/fb -v \$(pwd)/files:/app/files -e 'FB_*'",
+                        options: "-v \$(pwd)/files/ssh-config:/app/ssh-config -v \$(pwd)/scripts:/app/scripts -v \$(pwd)/fb:/app/fb -v \$(pwd)/files:/app/files -e 'FB_*'",
                         command: "scripts/${FB_SERVER_OS.toLowerCase()}/copy_files.sh")
                 }
             }
@@ -114,7 +114,7 @@ pipeline {
                 script {
                     podman.run("fb-helper:${params.imageTag}",
                         authfile: "${env.AUTHFILE}",
-                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL}",
+                        options: "-v \$(pwd)/files/ssh-config:/app/ssh-config -v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL}",
                         command: "scripts/${FB_SERVER_OS.toLowerCase()}/stop_fluentbit.sh")
                 }
             }
@@ -124,7 +124,7 @@ pipeline {
                 script {
                     podman.run("fb-helper:${params.imageTag}",
                         authfile: "${env.AUTHFILE}",
-                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL}",
+                        options: "-v \$(pwd)/files/ssh-config:/app/ssh-config -v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL}",
                         command: "scripts/${FB_SERVER_OS.toLowerCase()}/remove_agents.sh")
                 }
             }
@@ -137,16 +137,16 @@ pipeline {
                         env.FB_ARTIFACTORY_PASSWORD = "${env.REGISTRY_PASSWORD}"
                         podman.run("fb-helper:${params.imageTag}",
                             authfile: "${env.AUTHFILE}",
-                            options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
+                            options: "-v \$(pwd)/files/ssh-config:/app/ssh-config -v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
                             command: "scripts/linux/deploy_agents.sh")
                     } else if (env.FB_SERVER_OS == "windows") {
                         podman.run("fb-helper:${params.imageTag}",
                             authfile: "${env.AUTHFILE}",
-                            options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
+                            options: "-v \$(pwd)/files/ssh-config:/app/ssh-config -v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
                             command: "scripts/windows/deploy_agents_base.sh")
                         podman.run("fb-helper:${params.imageTag}",
                             authfile: "${env.AUTHFILE}",
-                            options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
+                            options: "-v \$(pwd)/files/ssh-config:/app/ssh-config -v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
                             command: "scripts/windows/deploy_agents_service.sh")
                     }
                     intention.endAction("install")
@@ -167,7 +167,7 @@ pipeline {
                 script {
                     podman.run("fb-helper:${params.imageTag}",
                         authfile: "${env.AUTHFILE}",
-                        options: "-v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL} -e 'WRAPPED_FB_SECRET_ID*'",
+                        options: "-v \$(pwd)/files/ssh-config:/app/ssh-config -v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL} -e 'WRAPPED_FB_SECRET_ID*'",
                         command: "scripts/${FB_SERVER_OS.toLowerCase()}/start_fluentbit_agent.sh",
                         skipPipelineEnv: true)
                     podman.logout(authfile: "${env.AUTHFILE}")

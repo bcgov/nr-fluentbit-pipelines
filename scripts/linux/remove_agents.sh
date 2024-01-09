@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set +x
-sshpass -p $FB_CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $FB_CD_USER@$FB_HOST /bin/bash <<EOF
+sshpass -p $FB_CD_PASS ssh -F /app/ssh-config -q $FB_CD_USER@$FB_HOST /bin/bash <<EOF
 # remove previously deployed s6 event/supervise directories and .env file
 sudo -su $FB_RUN_USER
 AGENTS=\$(ls -d $FB_AGENT_ROOT/fluent-bit.* 2>/dev/null)

@@ -2,8 +2,8 @@
 set +x
 
 SERVER_IP=$(dig +short $FB_HOST | tail -n1)
-
-sshpass -p $FB_CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $FB_CD_USER@$FB_HOST /bin/bash <<EOF
+echo $SERVER_HOST_KEY > /tmp/known_hosts
+sshpass -p $FB_CD_PASS ssh -F /app/ssh-config -q $FB_CD_USER@$FB_HOST /bin/bash <<EOF
 # become FB_RUN_USER
 sudo -su $FB_RUN_USER
 
