@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set +x
 
-sshpass -p $FB_CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $FB_CD_USER@$FB_HOST powershell.exe -Command -<<EOF
+sshpass -p $FB_CD_PASS ssh -F /app/ssh-config -q $FB_CD_USER@$FB_HOST powershell.exe -Command -<<EOF
 \$AGENTS = (Get-ChildItem -Directory -Path $FB_AGENT_ROOT/fluent-bit.* -Name)
 
 # note the extra space after the loop

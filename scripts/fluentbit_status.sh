@@ -23,7 +23,8 @@ if [ "${#SERVER_CONFIGS[@]}" -gt 0 ]; then
         fi
         if [ "$FB_HOST" != "localhost" ] && [ "$FB_SERVER_OS" == "linux" ] ; then
             echo "$FB_HOST - target: $FB_RELEASE"
-            sshpass -p $FB_CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $FB_CD_USER@$FB_HOST /bin/bash <<EOF
+            echo $SERVER_HOST_KEY > /tmp/known_hosts
+            sshpass -p $FB_CD_PASS ssh -F /app/ssh-config -q $FB_CD_USER@$FB_HOST /bin/bash <<EOF
 if [ -r $FB_AGENT_ROOT ]; then
     AGENTS=\$(ls -d $FB_AGENT_ROOT/fluent-bit.* 2>/dev/null)
     if [ "\${#AGENTS[@]}" -gt 0 ]; then

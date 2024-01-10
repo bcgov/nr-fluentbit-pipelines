@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set +x
 
-sshpass -p $FB_CD_PASS ssh -o 'StrictHostKeyChecking=no' -q $FB_CD_USER@$FB_HOST powershell.exe -Command -<<EOF
+sshpass -p $FB_CD_PASS ssh -F /app/ssh-config -q $FB_CD_USER@$FB_HOST powershell.exe -Command -<<EOF
 \$env:VAULT_ADDR = "$VAULT_ADDR"
 \$env:VAULT_TOKEN = "\$VAULT_TOKEN"
 \$env:FB_SECRET_ID = ($FB_BIN_DIR/vault/vault.exe unwrap -field=secret_id $WRAPPED_FB_SECRET_ID)
