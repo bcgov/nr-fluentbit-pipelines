@@ -16,13 +16,16 @@ if [ -z "$HTTP_PROXY" ]; then
     curl -sSL "https://releases.hashicorp.com/vault/${FB_VAULT_RELEASE}/vault_${FB_VAULT_RELEASE}_linux_amd64.zip" -o "$FB_TMP_DIR/bin/vault_${FB_VAULT_RELEASE}_linux_amd64.zip"
     curl -sSL "https://releases.hashicorp.com/envconsul/${FB_ENVCONSUL_RELEASE}/envconsul_${FB_ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$FB_TMP_DIR/bin/envconsul_${FB_ENVCONSUL_RELEASE}_linux_amd64.zip"
     curl -sSL "https://github.com/stedolan/jq/releases/download/jq-${FB_JQ_RELEASE}/jq-linux64" -o $FB_BIN_DIR/jq
+    curl -u $FB_ARTIFACTORY_USERNAME:$FB_ARTIFACTORY_PASSWORD -sSL "https://artifacts.developer.gov.bc.ca/artifactory/cc20-fluent-generic-local/fluent-bit/${FB_FLUENTBIT_RELEASE}/fluent-bit-${FB_OS_VARIANT}.tar.gz" -o $FB_TMP_DIR/bin/fluent-bit.tar.gz
+    curl -u $FB_ARTIFACTORY_USERNAME:$FB_ARTIFACTORY_PASSWORD -sSL "https://artifacts.developer.gov.bc.ca/artifactory/cc20-fluent-generic-local/sqlite/${FB_SQLITE_RELEASE}/sqlite.tar.gz" -o $FB_TMP_DIR/bin/sqlite.tar.gz
+
 else
     curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/vault/${FB_VAULT_RELEASE}/vault_${FB_VAULT_RELEASE}_linux_amd64.zip" -o "$FB_TMP_DIR/bin/vault_${FB_VAULT_RELEASE}_linux_amd64.zip"
     curl -x $HTTP_PROXY -sSL "https://releases.hashicorp.com/envconsul/${FB_ENVCONSUL_RELEASE}/envconsul_${FB_ENVCONSUL_RELEASE}_linux_amd64.zip" -o "$FB_TMP_DIR/bin/envconsul_${FB_ENVCONSUL_RELEASE}_linux_amd64.zip"
     curl -x $HTTP_PROXY -sSL "https://github.com/stedolan/jq/releases/download/jq-${FB_JQ_RELEASE}/jq-linux64" -o $FB_BIN_DIR/jq
+    curl -x $HTTP_PROXY -u $FB_ARTIFACTORY_USERNAME:$FB_ARTIFACTORY_PASSWORD -sSL "https://artifacts.developer.gov.bc.ca/artifactory/cc20-fluent-generic-local/fluent-bit/${FB_FLUENTBIT_RELEASE}/fluent-bit-${FB_OS_VARIANT}.tar.gz" -o $FB_TMP_DIR/bin/fluent-bit.tar.gz
+    curl -x $HTTP_PROXY -u $FB_ARTIFACTORY_USERNAME:$FB_ARTIFACTORY_PASSWORD -sSL "https://artifacts.developer.gov.bc.ca/artifactory/cc20-fluent-generic-local/sqlite/${FB_SQLITE_RELEASE}/sqlite.tar.gz" -o $FB_TMP_DIR/bin/sqlite.tar.gz
 fi
-curl -u $FB_ARTIFACTORY_USERNAME:$FB_ARTIFACTORY_PASSWORD -sSL "https://artifacts.developer.gov.bc.ca/artifactory/cc20-fluent-generic-local/fluent-bit/${FB_FLUENTBIT_RELEASE}/fluent-bit-${FB_OS_VARIANT}.tar.gz" -o $FB_TMP_DIR/bin/fluent-bit.tar.gz
-curl -u $FB_ARTIFACTORY_USERNAME:$FB_ARTIFACTORY_PASSWORD -sSL "https://artifacts.developer.gov.bc.ca/artifactory/cc20-fluent-generic-local/sqlite/${FB_SQLITE_RELEASE}/sqlite.tar.gz" -o $FB_TMP_DIR/bin/sqlite.tar.gz
 # set jq as executable
 chmod 755 $FB_BIN_DIR/jq
 # extract bin and lib
