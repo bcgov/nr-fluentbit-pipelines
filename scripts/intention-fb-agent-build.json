@@ -12,7 +12,7 @@
       "service": {
         "name": "fluentbit-agent-build",
         "project": "fluent",
-        "environment": "production"
+        "environment": "tools"
       }
     }
   ],

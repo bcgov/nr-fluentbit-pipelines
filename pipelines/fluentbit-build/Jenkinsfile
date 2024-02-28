@@ -36,7 +36,7 @@ pipeline {
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", APP_ROLE_ID)
                     def vault = new Vault(vaultToken)
-                    def buildCreds = vault.read("apps/data/prod/fluent/fluentbit-agent-build")
+                    def buildCreds = vault.read("apps/data/tools/fluent/fluentbit-agent-build")
                     env.ARTIFACTORY_USERNAME = buildCreds['artifactory_username']
                     env.ARTIFACTORY_PASSWORD = buildCreds['artifactory_password']
                     vault.revokeToken()
@@ -64,7 +64,7 @@ pipeline {
                                     --url=https://artifacts.developer.gov.bc.ca/artifactory \
                                     --user=${ARTIFACTORY_USERNAME} --password=${ARTIFACTORY_PASSWORD}')
                         }
-                    }                    
+                    }
                 }
             }
         }
