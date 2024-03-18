@@ -2,6 +2,7 @@
   "event": {
     "provider": "fluentbit-jenkins-job",
     "reason": "Job triggered",
+    "transient": true,
     "url": "JOB_URL"
   },
   "actions": [
