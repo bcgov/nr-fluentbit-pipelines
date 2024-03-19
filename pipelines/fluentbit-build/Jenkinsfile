@@ -47,6 +47,7 @@ pipeline {
         stage('build') {
             steps {
                 script {
+                    intention.startAction("build")
                     def podman = new Podman(this, null, "artifacts.developer.gov.bc.ca")
                     podman.login(options: "-u ${env.ARTIFACTORY_USERNAME} -p ${env.ARTIFACTORY_PASSWORD}")
                     podman.build(
@@ -65,6 +66,28 @@ pipeline {
                                     --user=${ARTIFACTORY_USERNAME} --password=${ARTIFACTORY_PASSWORD}')
                         }
                     }
+                    intention.endAction("build")
+                }
+            }
+        }
+    }
+    post {
+        success {
+            script {
+                intention.close(true)
+            }
+        }
+        unstable {
+            script {
+                if (intention) {
+                    intention.close(false)
+                }
+            }
+        }
+        failure {
+            script {
+                if (intention) {
+                    intention.close(false)
                 }
             }
         }
