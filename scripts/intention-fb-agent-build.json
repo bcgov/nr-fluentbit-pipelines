@@ -18,7 +18,7 @@
     {
       "action": "package-build",
       "id": "build",
-      "provision": ["token/self"],
+      "provision": [],
       "service": {
         "name": "fluentbit-agent-build",
         "project": "fluent",
