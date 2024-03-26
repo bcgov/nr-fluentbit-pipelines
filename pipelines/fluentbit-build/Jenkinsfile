@@ -20,7 +20,7 @@ pipeline {
                     intention.setEventDetails(
                         url: env.BUILD_URL
                     )
-                    if (!intention.open(NR_BROKER_JWT)) {
+                    if (!intention.open(NR_BROKER_JWT, ttl: 1600)) {
                         currentBuild.result = 'ABORTED'
                         error('Intention could not be opened')
                     }
