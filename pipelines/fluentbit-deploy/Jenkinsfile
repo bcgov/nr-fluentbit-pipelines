@@ -48,6 +48,7 @@ pipeline {
                         url: env.BUILD_URL,
                         packageInstallationVersion: commonModule.getFluentBitRelease("${params.fluentbitHost}")
                     )
+                    intention.intention.actions[1].cloud.target.instance.name = params.fluentbitHost
                     intention.open(NR_BROKER_JWT)
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
@@ -55,6 +56,7 @@ pipeline {
                     def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifactory')
                     env.REGISTRY_USERNAME = registryCreds['username']
                     env.REGISTRY_PASSWORD = registryCreds['password']
+                    env.FB_HOSTNAME = "${params.fluentbitHost}"
                     env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")
                     env.FB_SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
                     env.FB_FLUENTBIT_RELEASE = commonModule.getFluentBitRelease("${params.fluentbitHost}")
@@ -94,6 +96,8 @@ pipeline {
                         authfile: "${env.AUTHFILE}",
                         options: "-v \$(pwd)/fb/config:/app/config -v \$(pwd)/fb/output:/app/output",
                         command: "gen -m -s ${params.fluentbitHost}")
+                    def agentls = sh(script: "ls \$(pwd)/fb/output", returnStdout: true)
+                    env.FB_AGENT_COUNT = agentls.split("\\r?\\n").length
                 }
             }
         }
@@ -149,6 +153,15 @@ pipeline {
                             options: "-v \$(pwd)/files/ssh-config:/app/ssh-config -v \$(pwd)/scripts:/app/scripts -e 'FB_*' -e VAULT_ADDR=${Vault.KNOX_URL} -e HTTP_PROXY=${LOGS_HTTP_PROXY} -e NO_PROXY=${NO_PROXY}",
                             command: "scripts/windows/deploy_agents_service.sh")
                     }
+                    def appIds = podman.run(
+                        "fb-helper:${params.imageTag}",
+                        authfile: "${env.AUTHFILE}",
+                        options: "-v \$(pwd)/fb/config:/app/config -v \$(pwd)/scripts:/app/scripts -e 'FB_*'",
+                        command: "scripts/id_csv.sh",
+                        returnStdout: true
+                    )
+                    def actionInstall = intention.registerActionInstall("install", "{\"prop\": {\"agent_count\":\"${env.FB_AGENT_COUNT}\", \"app_ids\":\"${appIds.trim()}\", \"install_user\":\"${env.FB_INSTALL_USER}\", \"run_user\":\"${env.FB_RUN_USER}\"}}", "merge")
+                    println "Action install: ${actionInstall}"
                     intention.endAction("install")
                 }
             }
