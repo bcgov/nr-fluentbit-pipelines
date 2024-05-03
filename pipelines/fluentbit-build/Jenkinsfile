@@ -9,7 +9,7 @@ pipeline {
         label Podman.AGENT_LABEL_WEB
     }
     environment {
-        APP_ROLE_ID = credentials('knox-vault-fluentbit-agent-build-role-id')
+        APP_ROLE_ID = credentials('knox-vault-fluent-bit-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
     }
     stages {
@@ -18,7 +18,9 @@ pipeline {
                 script {
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-agent-build.json'))
                     intention.setEventDetails(
-                        url: env.BUILD_URL
+                        url: env.BUILD_URL,
+                        packageBuildVersion: "${params.FLUENT_BIT_VERSION}+RHEL${params.RHEL_VERSION}",
+                        packageBuildBuildVersion: "v${params.FLUENT_BIT_VERSION}"
                     )
                     if (!intention.open(NR_BROKER_JWT, ttl: 1600)) {
                         currentBuild.result = 'ABORTED'
@@ -36,7 +38,7 @@ pipeline {
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", APP_ROLE_ID)
                     def vault = new Vault(vaultToken)
-                    def buildCreds = vault.read("apps/data/tools/fluent/fluentbit-agent-build")
+                    def buildCreds = vault.read("apps/data/tools/fluent/fluent-bit")
                     env.ARTIFACTORY_USERNAME = buildCreds['artifactory_username']
                     env.ARTIFACTORY_PASSWORD = buildCreds['artifactory_password']
                     vault.revokeToken()
@@ -54,6 +56,8 @@ pipeline {
                         options: "--build-arg FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION} -v \$(pwd)/dropbox:/dropbox -f \$(pwd)/agent/Dockerfile-rhel${params.RHEL_VERSION}"
                     )
                     sh "ls -alh \$(pwd)/dropbox/${params.FLUENT_BIT_VERSION}"
+                    def shaHash = sh(script: "sha256sum \$(pwd)dropbox/${FLUENT_BIT_VERSION}/fluent-bit-rhel${RHEL_VERSION}.tar.gz", returnStdout: true)
+                    intention.patchAction("build", "{\"package\":{\"checksum\": \"sha256:${shaHash}\"}}")
                     podman = new Podman(this, null, "releases-docker.jfrog.io/jfrog")
                     wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: env.ARTIFACTORY_USERNAME, password: ARTIFACTORY_USERNAME], [var: env.ARTIFACTORY_PASSWORD, password: ARTIFACTORY_PASSWORD]]]) {
                         withEnv(["FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION}", "RHEL_VERSION=${params.RHEL_VERSION}"]) {
