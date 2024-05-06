@@ -57,7 +57,7 @@ pipeline {
                         options: "--build-arg FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION} -v \$(pwd)/dropbox:/dropbox -f \$(pwd)/agent/Dockerfile-rhel${params.RHEL_VERSION}"
                     )
                     sh "ls -alh \$(pwd)/dropbox/${params.FLUENT_BIT_VERSION}"
-                    def shaHash = sh(script: "sha256sum \$(pwd)dropbox/${FLUENT_BIT_VERSION}/fluent-bit-rhel${RHEL_VERSION}.tar.gz", returnStdout: true)
+                    def shaHash = sh(script: "sha256sum \$(pwd)/dropbox/${FLUENT_BIT_VERSION}/fluent-bit-rhel${RHEL_VERSION}.tar.gz", returnStdout: true)
                     intention.patchAction("build", "{\"package\":{\"checksum\": \"sha256:${shaHash}\"}}")
                     podman = new Podman(this, null, "releases-docker.jfrog.io/jfrog")
                     wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: env.ARTIFACTORY_USERNAME, password: ARTIFACTORY_USERNAME], [var: env.ARTIFACTORY_PASSWORD, password: ARTIFACTORY_PASSWORD]]]) {
