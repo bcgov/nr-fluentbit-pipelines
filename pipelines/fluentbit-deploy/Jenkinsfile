@@ -162,8 +162,7 @@ pipeline {
                         command: "scripts/id_csv.sh",
                         returnStdout: true
                     )
-                    def actionPatch = intention.patchAction("install", "{\"cloud\":{\"target\":{\"propStrategy\":\"merge\",\"prop\": {\"agent_count\":\"${env.FB_AGENT_COUNT}\", \"app_ids\":\"${appIds.trim()}\", \"install_user\":\"${env.FB_INSTALL_USER}\", \"run_user\":\"${env.FB_RUN_USER}\"}}}}")
-                    println "Action patch: ${actionPatch}"
+                    intention.patchAction("install", "{\"cloud\":{\"target\":{\"propStrategy\":\"merge\",\"prop\": {\"agent_count\":\"${env.FB_AGENT_COUNT}\", \"app_ids\":\"${appIds.trim()}\", \"install_user\":\"${env.FB_INSTALL_USER}\", \"run_user\":\"${env.FB_RUN_USER}\"}}}}")
                     intention.endAction("install")
                 }
             }
