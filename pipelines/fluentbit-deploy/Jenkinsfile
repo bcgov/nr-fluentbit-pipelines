@@ -23,7 +23,7 @@ pipeline {
         FB_JQ_RELEASE = "1.6"
         FB_SQLITE_RELEASE = "3.38.5"
         FB_WINSW_RELEASE = "v2.11.0"
-        FB_BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
+        FB_BROKER_URL = "https://broker.io.nrs.gov.bc.ca"
         FB_BUILD_URL = "${env.BUILD_URL}"
         FB_CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
         FB_ROLE_ID = credentials('knox-vault-fluentbit-app-role-id')
@@ -42,20 +42,6 @@ pipeline {
                     sh 'rm -rf fb && mkdir fb'
                     sh 'git clone -b main https://github.com/bcgov-nr/nr-funbucks.git fb'
                     commonModule = load "pipelines/common.groovy"
-                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-install.json'))
-                    intention.setEventDetails(
-                        userName: JenkinsUtil.getCauseUserId(currentBuild),
-                        url: env.BUILD_URL,
-                        packageInstallationVersion: commonModule.getFluentBitRelease("${params.fluentbitHost}")
-                    )
-                    intention.intention.actions[1].cloud.target.instance.name = params.fluentbitHost
-                    intention.open(NR_BROKER_JWT)
-                    intention.startAction("login")
-                    def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
-                    def vault = new Vault(vaultToken)
-                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifactory')
-                    env.REGISTRY_USERNAME = registryCreds['username']
-                    env.REGISTRY_PASSWORD = registryCreds['password']
                     env.FB_HOSTNAME = "${params.fluentbitHost}"
                     env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")
                     env.FB_SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
@@ -71,6 +57,25 @@ pipeline {
                     env.FB_VAULT_CD_USER_FIELD = commonModule.getVaultCdUserField("${params.fluentbitHost}")
                     env.FB_VAULT_CD_PASS_FIELD = commonModule.getVaultCdPassField("${params.fluentbitHost}")
                     env.FB_VAULT_CD_PATH = commonModule.getVaultCdPath("${params.fluentbitHost}")
+                    env.HTTP_PROXY_URL = commonModule.getHttpProxy("${params.fluentbitHost}")
+                    env.LOGS_PROXY_DISABLED = commonModule.getLogsProxyDisabled("${params.fluentbitHost}")
+                    env.LOGS_HTTP_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
+
+                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-install.json'))
+                    intention.setEventDetails(
+                        userName: JenkinsUtil.getCauseUserId(currentBuild),
+                        url: env.BUILD_URL,
+                        packageInstallationName: "fluent-bit-${env.FB_OS_VARIANT}"
+                        packageInstallationVersion: env.FB_FLUENTBIT_RELEASE
+                    )
+                    intention.intention.actions[1].cloud.target.instance.name = params.fluentbitHost
+                    intention.open(NR_BROKER_JWT)
+                    intention.startAction("login")
+                    def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
+                    def vault = new Vault(vaultToken)
+                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifactory')
+                    env.REGISTRY_USERNAME = registryCreds['username']
+                    env.REGISTRY_PASSWORD = registryCreds['password']
                     def vault_cd_path = "${env.FB_VAULT_CD_PATH}"
                     def cdCreds = vault.read(vault_cd_path.replaceFirst('/', '/data/'))
                     def ciCreds = vault.read('groups/data/appdelivery/jenkins-isss-ci')
@@ -79,9 +84,6 @@ pipeline {
                     env.FB_CI_USER = ciCreds.username_lowercase
                     env.FB_CI_PASS = ciCreds.password
                     vault.revokeToken()
-                    env.HTTP_PROXY_URL = commonModule.getHttpProxy("${params.fluentbitHost}")
-                    env.LOGS_PROXY_DISABLED = commonModule.getLogsProxyDisabled("${params.fluentbitHost}")
-                    env.LOGS_HTTP_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
                     env.NO_PROXY = "${Vault.KNOX_URL}"
                 }
                 sh 'mkdir $(pwd)/fb/output'
@@ -160,8 +162,7 @@ pipeline {
                         command: "scripts/id_csv.sh",
                         returnStdout: true
                     )
-                    def actionInstall = intention.registerActionInstall("install", "{\"prop\": {\"agent_count\":\"${env.FB_AGENT_COUNT}\", \"app_ids\":\"${appIds.trim()}\", \"install_user\":\"${env.FB_INSTALL_USER}\", \"run_user\":\"${env.FB_RUN_USER}\"}}", "merge")
-                    println "Action install: ${actionInstall}"
+                    intention.patchAction("install", "{\"cloud\":{\"target\":{\"propStrategy\":\"merge\",\"prop\": {\"agent_count\":\"${env.FB_AGENT_COUNT}\", \"app_ids\":\"${appIds.trim()}\", \"install_user\":\"${env.FB_INSTALL_USER}\", \"run_user\":\"${env.FB_RUN_USER}\"}}}}")
                     intention.endAction("install")
                 }
             }
