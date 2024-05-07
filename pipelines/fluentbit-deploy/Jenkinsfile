@@ -65,7 +65,7 @@ pipeline {
                     intention.setEventDetails(
                         userName: JenkinsUtil.getCauseUserId(currentBuild),
                         url: env.BUILD_URL,
-                        packageInstallationName: "fluent-bit-${env.FB_OS_VARIANT}"
+                        packageInstallationName: "fluent-bit-${env.FB_OS_VARIANT}",
                         packageInstallationVersion: env.FB_FLUENTBIT_RELEASE
                     )
                     intention.intention.actions[1].cloud.target.instance.name = params.fluentbitHost
