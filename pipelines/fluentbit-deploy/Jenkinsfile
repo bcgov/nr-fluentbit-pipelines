@@ -40,7 +40,7 @@ pipeline {
             steps {
                 script {
                     sh 'rm -rf fb && mkdir fb'
-                    sh 'git clone -b main https://github.com/bcgov-nr/nr-funbucks.git fb'
+                    sh "git clone -b ${params.fbGitBranch} https://github.com/bcgov-nr/nr-funbucks.git fb"
                     commonModule = load "pipelines/common.groovy"
                     env.FB_HOSTNAME = "${params.fluentbitHost}"
                     env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")

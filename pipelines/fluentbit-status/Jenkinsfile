@@ -24,7 +24,7 @@ pipeline {
                 HTTP_PROXY = "http://test-forwardproxy.nrs.bcgov:23128"
                 FB_GIT_BRANCH = "${params.fbGitBranch}"
             }
-            steps {                
+            steps {
                 script {
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
                     intention.setEventDetails(
@@ -34,7 +34,7 @@ pipeline {
                     intention.open(NR_BROKER_JWT, ttl: 600)
                     intention.startAction("login")
                     sh 'rm -rf fb && mkdir fb'
-                    sh 'git clone -b main https://github.com/bcgov-nr/nr-funbucks.git fb'
+                    sh "git clone -b ${params.fbGitBranch} https://github.com/bcgov-nr/nr-funbucks.git fb"
                 }
             }
         }
