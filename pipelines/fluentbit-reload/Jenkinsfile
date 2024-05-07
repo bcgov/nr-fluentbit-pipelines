@@ -17,7 +17,7 @@ pipeline {
         FB_S6_SERVICE_HOME = "/apps_ux/s6_services"
         FB_FLUENTBIT_DB = "/apps_data/agents/fluent-bit/fluent-bit-logs.db"
         FB_TAIL_FILES_LIKE = "${params.fluentbitFilesLike}"
-        FB_BROKER_URL = "https://nr-broker.apps.silver.devops.gov.bc.ca"
+        FB_BROKER_URL = "https://broker.io.nrs.gov.bc.ca"
         FB_CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
         FB_BUILD_URL = "${env.BUILD_URL}"
