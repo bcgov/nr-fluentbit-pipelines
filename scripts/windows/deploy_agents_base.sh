@@ -11,7 +11,7 @@ echo "Temp directory: $FB_TMP_DIR"
 # create bin directories and agent root
 New-Item -ItemType "directory" -Path "$FB_BIN_DIR/vault" -Force
 New-Item -ItemType "directory" -Path "$FB_BIN_DIR/envconsul" -Force
-New-Item -ItemType "directory" -Path "$FB_BIN_DIR/jq" -Force 
+New-Item -ItemType "directory" -Path "$FB_BIN_DIR/jq" -Force
 New-Item -ItemType "directory" -Path "$FB_BIN_DIR/sqlite" -Force
 New-Item -ItemType "directory" -Path "$FB_AGENT_ROOT" -Force
 New-Item -ItemType "directory" -Path "E:/apps_data/agents/fluent-bit" -Force
@@ -27,7 +27,7 @@ if ("$HTTP_PROXY".Length -gt 0) {
   Invoke-WebRequest -Proxy $HTTP_PROXY -Uri "https://releases.hashicorp.com/envconsul/${FB_ENVCONSUL_RELEASE}/envconsul_${FB_ENVCONSUL_RELEASE}_windows_amd64.zip" -OutFile "$FB_TMP_DIR/bin/envconsul.zip"
   Invoke-WebRequest -Proxy $HTTP_PROXY -Uri "https://github.com/stedolan/jq/releases/download/jq-${FB_JQ_RELEASE}/jq-win64.exe" -OutFile "$FB_BIN_DIR/jq/jq-win64.exe"
   Invoke-WebRequest -Proxy $HTTP_PROXY -Uri "https://packages.fluentbit.io/windows/fluent-bit-${FB_FLUENTBIT_RELEASE}-win64.zip" -OutFile "$FB_TMP_DIR/bin/fluent-bit.zip"
-  Invoke-WebRequest -Proxy $HTTP_PROXY -Uri "https://www.sqlite.org/2022/sqlite-tools-win32-x86-3390300.zip" -OutFile "$FB_TMP_DIR/bin/sqlite.zip"
+  Invoke-WebRequest -Proxy $HTTP_PROXY -Uri "https://www.sqlite.org/2024/sqlite-tools-win-x64-3460000.zip" -OutFile "$FB_TMP_DIR/bin/sqlite.zip"
   Invoke-WebRequest -Proxy $HTTP_PROXY -Uri "https://github.com/winsw/winsw/releases/download/${FB_WINSW_RELEASE}/WinSW-x64.exe" -OutFile "$FB_TMP_DIR/bin/WinSW-x64.exe"
 } else {
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -35,7 +35,7 @@ if ("$HTTP_PROXY".Length -gt 0) {
   Invoke-WebRequest -Uri "https://releases.hashicorp.com/envconsul/${FB_ENVCONSUL_RELEASE}/envconsul_${FB_ENVCONSUL_RELEASE}_windows_amd64.zip" -OutFile "$FB_TMP_DIR/bin/envconsul.zip"
   Invoke-WebRequest -Uri "https://github.com/stedolan/jq/releases/download/jq-${FB_JQ_RELEASE}/jq-win64.exe" -OutFile "$FB_BIN_DIR/jq/jq-win64.exe"
   Invoke-WebRequest -Uri "https://packages.fluentbit.io/windows/fluent-bit-${FB_FLUENTBIT_RELEASE}-win64.zip" -OutFile "$FB_TMP_DIR/bin/fluent-bit.zip"
-  Invoke-WebRequest -Uri "https://www.sqlite.org/2022/sqlite-tools-win32-x86-3390300.zip" -OutFile "$FB_TMP_DIR/bin/sqlite.zip"
+  Invoke-WebRequest -Uri "https://www.sqlite.org/2024/sqlite-tools-win-x64-3460000.zip" -OutFile "$FB_TMP_DIR/bin/sqlite.zip"
   Invoke-WebRequest -Uri "https://github.com/winsw/winsw/releases/download/${FB_WINSW_RELEASE}/WinSW-x64.exe" -OutFile "$FB_TMP_DIR/bin/WinSW-x64.exe"
 }
 
@@ -44,8 +44,8 @@ Expand-Archive -Path "$FB_TMP_DIR/bin/vault.zip" -DestinationPath "$FB_TMP_DIR/b
 Move-Item -Path "$FB_TMP_DIR/bin/vault.exe" -Destination "$FB_BIN_DIR/vault" -Force
 Expand-Archive -Path "$FB_TMP_DIR/bin/envconsul.zip" -DestinationPath "$FB_TMP_DIR/bin" -Force
 Move-Item -Path "$FB_TMP_DIR/bin/envconsul.exe" -Destination "$FB_BIN_DIR/envconsul" -Force
-Expand-Archive -Path "$FB_TMP_DIR/bin/sqlite.zip" -DestinationPath "$FB_TMP_DIR/bin" -Force
-Move-Item -Path "$FB_TMP_DIR/bin/sqlite-tools-win32-x86-3390300/*" -Destination "$FB_BIN_DIR/sqlite" -Force
+Expand-Archive -Path "$FB_TMP_DIR/bin/sqlite.zip" -DestinationPath "$FB_TMP_DIR/bin/sqlite" -Force
+Move-Item -Path "$FB_TMP_DIR/bin/sqlite/*" -Destination "$FB_BIN_DIR/sqlite" -Force
 
 # deploy fluent bit
 Expand-Archive -Path "$FB_TMP_DIR/bin/fluent-bit.zip" -DestinationPath "$FB_TMP_DIR/bin" -Force
@@ -60,10 +60,10 @@ if (\$AGENTS.count -gt 0) {
     Copy-Item -Path "$FB_TMP_DIR/output/\$AGENT/*" -Destination "\$AGENT_HOME/conf" -Recurse -Force
     # generate fluent-bit.hcl
     Get-Content "$FB_TMP_DIR/files/fluent-bit.hcl" | % {
-      \$_.replace("{{ apm_agent_home }}/bin/fluent-bit -c {{ apm_agent_home }}/conf/fluent-bit.conf","\$AGENT_HOME/bin/fluent-bit.exe -c \$AGENT_HOME/conf/fluent-bit.conf").
+      \$_.replace("{{ apm_agent_home }}/bin/fluent-bit", "\$AGENT_HOME/bin/fluent-bit.exe").replace("{{ apm_agent_home }}", "\$AGENT_HOME").
       replace('HTTP_PROXY=\$HTTP_PROXY', "HTTP_PROXY=$HTTP_PROXY")
     } | Set-Content "\$AGENT_HOME/conf/fluent-bit.hcl" -Force
-  }  
+  }
 } else {
   throw "No agents found for deployment"
 }
