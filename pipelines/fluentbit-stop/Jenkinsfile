@@ -36,7 +36,8 @@ pipeline {
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
                     intention.setEventDetails(
                         userName: JenkinsUtil.getCauseUserId(currentBuild),
-                        url: env.BUILD_URL
+                        url: env.BUILD_URL,
+                        reason: "Stop agent"
                     )
                     intention.open(NR_BROKER_JWT)
                     intention.startAction("login")

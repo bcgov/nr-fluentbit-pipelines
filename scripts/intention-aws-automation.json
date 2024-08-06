@@ -1,7 +1,7 @@
 {
   "event": {
     "provider": "aws-automation-jenkins-job",
-    "reason": "Job triggered",
+    "reason": "Poll queue",
     "transient": true,
     "url": "JOB_URL"
   },
