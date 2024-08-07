@@ -1,7 +1,7 @@
 {
   "event": {
     "provider": "fluentbit-jenkins-job",
-    "reason": "Job triggered",
+    "reason": "Start agent",
     "transient": true,
     "url": "JOB_URL"
   },

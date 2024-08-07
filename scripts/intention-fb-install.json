@@ -1,7 +1,7 @@
 {
   "event": {
     "provider": "fluentbit-jenkins-job",
-    "reason": "Job triggered",
+    "reason": "Install agent",
     "url": "JOB_URL"
   },
   "actions": [
