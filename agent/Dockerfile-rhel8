@@ -2,8 +2,8 @@ FROM artifacts.developer.gov.bc.ca/redhat-docker-remote/ubi8
 
 # Prerequisites
 RUN yum install -y gcc-c++ gzip make openssl openssl-devel postgresql-libs tar which libyaml git
-RUN yum install -y http://mirror.centos.org/centos/8-stream/AppStream/x86_64/os/Packages/bison-3.0.4-10.el8.x86_64.rpm && \
-    yum install -y http://mirror.centos.org/centos/8-stream/AppStream/x86_64/os/Packages/flex-2.6.1-9.el8.x86_64.rpm
+RUN yum install -y https://vault.centos.org/8-stream/AppStream/x86_64/os/Packages/bison-3.0.4-10.el8.x86_64.rpm && \
+    yum install -y https://vault.centos.org/8-stream/AppStream/x86_64/os/Packages/flex-2.6.1-9.el8.x86_64.rpm
 
 # Cmake
 WORKDIR /tmp/cmake
