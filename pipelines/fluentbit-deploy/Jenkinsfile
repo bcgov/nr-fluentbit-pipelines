@@ -25,7 +25,7 @@ pipeline {
         FB_WINSW_RELEASE = "v2.12.0"
         FB_BROKER_URL = "https://broker.io.nrs.gov.bc.ca"
         FB_BUILD_URL = "${env.BUILD_URL}"
-        FB_CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
+        FB_CONFIG_ROLE_ID = credentials('knox-jenkins-jenkins-apps-prod-role-id')
         FB_ROLE_ID = credentials('knox-vault-fluentbit-app-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
         IMAGE_TAG = "${params.imageTag}"
@@ -78,7 +78,7 @@ pipeline {
                     env.REGISTRY_PASSWORD = registryCreds['REGISTRY_PASSWORD']
                     def vault_cd_path = "${env.FB_VAULT_CD_PATH}"
                     def cdCreds = vault.read(vault_cd_path.replaceFirst('/', '/data/'))
-                    def ciCreds = vault.read('groups/data/appdelivery/jenkins-isss-ci')
+                    def ciCreds = vault.read('apps/data/prod/jenkins/jenkins-apps/ci')
                     env.FB_CD_USER = cdCreds[env.FB_VAULT_CD_USER_FIELD]
                     env.FB_CD_PASS = cdCreds[env.FB_VAULT_CD_PASS_FIELD]
                     env.FB_CI_USER = ciCreds.username_lowercase

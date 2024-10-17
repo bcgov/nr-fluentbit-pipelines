@@ -13,7 +13,7 @@ pipeline {
         label Podman.AGENT_LABEL_APP
     }
     environment {
-        CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
+        CONFIG_ROLE_ID = credentials('knox-jenkins-jenkins-apps-prod-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
         FB_INSTALL_USER = "wwwadm"
         FB_RUN_USER = "wwwsvr"

@@ -18,7 +18,7 @@ pipeline {
         FB_AGENT = "${params.fluentbitAgent}"
         FB_S6_SERVICE_HOME = "/apps_ux/s6_services"
         FB_BROKER_URL = "https://broker.io.nrs.gov.bc.ca"
-        FB_CONFIG_ROLE_ID = credentials('knox-vault-jenkins-role-id')
+        FB_CONFIG_ROLE_ID = credentials('knox-jenkins-jenkins-apps-prod-role-id')
         FB_ROLE_ID = credentials('knox-vault-fluentbit-app-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
         IMAGE_TAG = "${params.imageTag}"
