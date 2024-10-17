@@ -15,7 +15,7 @@
         "project": "fluent",
         "environment": "production",
         "target": {
-          "name": "jenkins-polaris",
+          "name": "jenkins-apps",
           "project": "jenkins",
           "environment": "production"
         }
