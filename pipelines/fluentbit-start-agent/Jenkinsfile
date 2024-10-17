@@ -44,9 +44,9 @@ pipeline {
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
                     def vault = new Vault(vaultToken)
-                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifactory')
-                    env.REGISTRY_USERNAME = registryCreds['username']
-                    env.REGISTRY_PASSWORD = registryCreds['password']
+                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-apps/artifactory')
+                    env.REGISTRY_USERNAME = registryCreds['REGISTRY_USERNAME']
+                    env.REGISTRY_PASSWORD = registryCreds['REGISTRY_PASSWORD']
                     env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")
                     env.FB_SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
                     if (env.FB_SERVER_OS != "linux" && env.FB_SERVER_OS != "windows") {

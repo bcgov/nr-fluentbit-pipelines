@@ -73,9 +73,9 @@ pipeline {
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
                     def vault = new Vault(vaultToken)
-                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-polaris/artifactory')
-                    env.REGISTRY_USERNAME = registryCreds['username']
-                    env.REGISTRY_PASSWORD = registryCreds['password']
+                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-apps/artifactory')
+                    env.REGISTRY_USERNAME = registryCreds['REGISTRY_USERNAME']
+                    env.REGISTRY_PASSWORD = registryCreds['REGISTRY_PASSWORD']
                     def vault_cd_path = "${env.FB_VAULT_CD_PATH}"
                     def cdCreds = vault.read(vault_cd_path.replaceFirst('/', '/data/'))
                     def ciCreds = vault.read('groups/data/appdelivery/jenkins-isss-ci')
