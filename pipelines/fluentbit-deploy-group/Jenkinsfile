@@ -1,0 +1,50 @@
+@Library('polaris')
+import ca.bc.gov.nrids.polaris.Podman
+
+pipeline {
+    agent {
+        label Podman.AGENT_LABEL_APP
+    }
+    environment {
+        BROKER_URL = 'https://broker.io.nrs.gov.bc.ca'
+        BROKER_JWT = credentials('nr-broker-jwt')
+        SERVER_GROUP = "${params.serverGroup}"
+    }
+    stages {
+        stage('Export servers') {
+            steps {
+                script {
+                    sh "scripts/export-servers.sh"
+                }
+            }
+        }
+        stage('Call deployment job') {
+            steps {
+                script {
+                    def fileContent = readFile(file: 'servers.txt', encoding: 'UTF-8')
+                    def items = fileContent.split('\n').collect { it.trim() }
+                    for (item in items) {
+                        echo "Call job for server: ${item}"
+                        build(job: 'fluentbit-deploy', parameters: [
+                            string(name: 'fluentbitHost', value: "${item}"),
+                            booleanParam(name: 'groupDeployment', value: true)
+                        ])
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            node(Podman.AGENT_LABEL_APP) {
+                cleanWs(
+                    cleanWhenAborted: true,
+                    cleanWhenFailure: false,
+                    cleanWhenSuccess: true,
+                    cleanWhenUnstable: false,
+                    deleteDirs: true
+                )
+            }
+        }
+    }
+}
