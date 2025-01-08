@@ -26,10 +26,12 @@ pipeline {
                     def items = fileContent.split('\n').collect { it.trim() }
                     for (item in items) {
                         echo "Call job for server: ${item}"
-                        build(job: 'fluentbit-deploy', parameters: [
-                            string(name: 'fluentbitHost', value: "${item}"),
-                            booleanParam(name: 'groupDeployment', value: true)
-                        ])
+                        if (!params.dryRun) {
+                            build(job: 'fluentbit-deploy', parameters: [
+                                string(name: 'fluentbitHost', value: "${item}"),
+                                booleanParam(name: 'groupDeployment', value: true)
+                            ])
+                        }
                     }
                 }
             }
