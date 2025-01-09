@@ -2,7 +2,8 @@
 
 BROKER_URL=$BROKER_URL
 BROKER_JWT=$BROKER_JWT
-SERVER_GROUP=$SERVER_GROUP
+SRV_GROUP=$SRV_GROUP
+ENV_GROUP=$ENV_GROUP
 
 SERVER_RESPONSE=$(curl -s -X POST $BROKER_URL/v1/collection/server/export \
     -H 'accept: application/json' \
@@ -10,15 +11,31 @@ SERVER_RESPONSE=$(curl -s -X POST $BROKER_URL/v1/collection/server/export \
     -d '' \
     )
 
-if [ "$SERVER_GROUP" = "canary" ]; then
-    echo $SERVER_RESPONSE | jq -r 'sort_by(.name) | .[] | select((.tags | index("fluentbit_canary"))) | .name' > servers.txt
+# canary
+if [ "$SRV_GROUP" = "canary" ]; then
+    echo $SERVER_RESPONSE | jq -r 'sort_by(.name) | .[] | select((.tags | index("canary"))) | .name' > servers.txt
 fi
 
-if [ "$SERVER_GROUP" = "wildfire_nonproduction" ]; then
-    echo $SERVER_RESPONSE | jq -r 'sort_by(.name) | .[] | select((.tags | index("wildfire")) and (.tags | index("nonproduction"))) | .name' > servers.txt
+# nonwildfire and nonproduction
+if [ "$SRV_GROUP" = "nonwildfire" ] && [ "$ENV_GROUP" = "nonproduction" ]; then
+    echo $SERVER_RESPONSE | jq -r \
+    'sort_by(.name) | .[] | select((.tags | index("nonwildfire")) and (.tags | index("nonproduction")) and (.tags | index("skip_fluentbit_deploy")) == null) | .name' > servers.txt
 fi
 
-# all tagged, nonproduction servers
-if [ "$SERVER_GROUP" = "nonproduction" ]; then
-    echo $SERVER_RESPONSE | jq -r 'sort_by(.name) | .[] | select((.tags | length > 0) and (.tags | index("production") == null)) | .name' > servers.txt
+# nonwildfire and production
+if [ "$SRV_GROUP" = "nonwildfire" ] && [ "$ENV_GROUP" = "production" ]; then
+    echo $SERVER_RESPONSE | jq -r \
+    'sort_by(.name) | .[] | select((.tags | index("nonwildfire")) and (.tags | index("production")) and (.tags | index("skip_fluentbit_deploy")) == null) | .name' > servers.txt
+fi
+
+# wildfire and nonproduction
+if [ "$SRV_GROUP" = "wildfire" ] && [ "$ENV_GROUP" = "nonproduction" ]; then
+    echo $SERVER_RESPONSE | jq -r \
+    'sort_by(.name) | .[] | select((.tags | index("wildfire")) and (.tags | index("nonproduction")) and (.tags | index("skip_fluentbit_deploy")) == null) | .name' > servers.txt
+fi
+
+# wildfire and production
+if [ "$SRV_GROUP" = "wildfire" ] && [ "$ENV_GROUP" = "production" ]; then
+    echo $SERVER_RESPONSE | jq -r \
+    'sort_by(.name) | .[] | select((.tags | index("wildfire")) and (.tags | index("production")) and (.tags | index("skip_fluentbit_deploy")) == null) | .name' > servers.txt
 fi
