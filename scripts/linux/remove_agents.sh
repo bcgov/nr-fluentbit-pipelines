@@ -42,7 +42,7 @@ if [ "$PCI" = "true" ]; then
 else
     sudo -su $FB_RUN_USER
 fi
-/sw_ux/s6/bin/s6-svscanctl -an $FB_S6_SERVICE_HOME
+/sw_ux/s6/bin/s6-svscanctl -a $FB_S6_SERVICE_HOME
 /sw_ux/s6/bin/s6-svscanctl -z $FB_S6_SERVICE_HOME
 exit
 

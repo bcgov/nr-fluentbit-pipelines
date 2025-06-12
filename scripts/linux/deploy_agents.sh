@@ -75,7 +75,7 @@ exit
 # become FB_RUN_USER
 sudo -su $FB_RUN_USER
 # Trigger adding
-/sw_ux/s6/bin/s6-svscanctl -an $FB_S6_SERVICE_HOME
+/sw_ux/s6/bin/s6-svscanctl -a $FB_S6_SERVICE_HOME
 # deploy log rotation
 cd $FB_TMP_DIR
 mkdir -p /apps_ux/logs/agents/fluent-bit
