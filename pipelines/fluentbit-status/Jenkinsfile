@@ -35,7 +35,7 @@ pipeline {
                     intention.open(NR_BROKER_JWT, ttl: 600)
                     intention.startAction("login")
                     sh 'rm -rf fb && mkdir fb'
-                    sh "git clone -b ${params.fbGitBranch} https://github.com/bcgov-nr/nr-funbucks.git fb"
+                    sh "git clone -b ${params.fbGitBranch} https://github.com/bcgov/nr-funbucks.git fb"
                 }
             }
         }

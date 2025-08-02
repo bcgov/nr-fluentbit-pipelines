@@ -31,7 +31,7 @@ pipeline {
             steps {
                 script {
                     sh 'rm -rf fb && mkdir fb'
-                    sh "git clone -b ${params.fbGitBranch} https://github.com/bcgov-nr/nr-funbucks.git fb"
+                    sh "git clone -b ${params.fbGitBranch} https://github.com/bcgov/nr-funbucks.git fb"
                     commonModule = load "pipelines/common.groovy"
                     intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
                     intention.setEventDetails(
