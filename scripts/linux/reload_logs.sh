@@ -4,8 +4,6 @@ sshpass -p $FB_CD_PASS ssh -F /app/ssh-config -q $FB_CD_USER@$FB_HOST /bin/bash 
 # become FB_RUN_USER
 sudo -su $FB_RUN_USER
 
-/sw_ux/bin/sqlite3 $FB_FLUENTBIT_DB "DELETE FROM in_tail_files where name like '$FB_TAIL_FILES_LIKE'"
-
 AGENTS=\$(ls -d $FB_AGENT_ROOT/fluent-bit.* 2>/dev/null)
 if [ "\${#AGENTS[@]}" -gt 0 ]; then
     for agent in \${AGENTS[@]}; do
@@ -16,6 +14,7 @@ if [ "\${#AGENTS[@]}" -gt 0 ]; then
         fi
     done
     sleep 6
+    /sw_ux/bin/sqlite3 $FB_FLUENTBIT_DB "DELETE FROM in_tail_files where name like '$FB_TAIL_FILES_LIKE'"
     for agent in \${AGENTS[@]}; do
         AGENT=\$(basename \$agent)
         AGENT_HOME=$FB_AGENT_ROOT/\$AGENT
