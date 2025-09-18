@@ -90,7 +90,7 @@ pipeline {
         stage('Build config') {
             steps {
                 script {
-                    podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman = new Podman(this, null, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
                     podman.run("nr-funbucks:${params.imageTag}",
                         authfile: "${env.AUTHFILE}",
