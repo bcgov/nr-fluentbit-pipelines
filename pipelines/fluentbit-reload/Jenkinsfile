@@ -70,7 +70,7 @@ pipeline {
         stage('Reload logs') {
             steps {
                 script {
-                    podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman = new Podman(this, null, null, env.AUTHFILE, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
                     intention.startAction("configure")
                     podman.run("fb-helper:${params.imageTag}",

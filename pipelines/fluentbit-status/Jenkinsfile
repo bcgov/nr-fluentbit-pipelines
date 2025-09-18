@@ -26,7 +26,7 @@ pipeline {
             }
             steps {
                 script {
-                    intention = new BrokerIntention(NR_BROKER_JWT,readJSON(file: 'scripts/intention-fb-configure.json'))
+                    intention = new BrokerIntention(NR_BROKER_JWT, readJSON(file: 'scripts/intention-fb-configure.json'))
                     intention.setEventDetails(
                         userName: JenkinsUtil.getCauseUserId(currentBuild),
                         url: env.BUILD_URL,
@@ -49,7 +49,7 @@ pipeline {
                     env.REGISTRY_PASSWORD = registryCreds['REGISTRY_PASSWORD']
                     env.VAULT_TOKEN = vaultToken
                     env.VAULT_ADDR = "${Vault.KNOX_URL}"
-                    podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman = new Podman(this, null, env.AUTHFILE, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
                     intention.startAction("configure")
                     podman.run("fb-helper:${params.imageTag}",

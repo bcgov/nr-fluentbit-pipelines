@@ -33,7 +33,7 @@ pipeline {
                     sh 'rm -rf fb && mkdir fb'
                     sh "git clone -b ${params.fbGitBranch} https://github.com/bcgov/nr-funbucks.git fb"
                     commonModule = load "pipelines/common.groovy"
-                    intention = new BrokerIntention(NR_BROKER_JWT,readJSON(file: 'scripts/intention-fb-configure.json'))
+                    intention = new BrokerIntention(NR_BROKER_JWT, readJSON(file: 'scripts/intention-fb-configure.json'))
                     intention.setEventDetails(
                         userName: JenkinsUtil.getCauseUserId(currentBuild),
                         url: env.BUILD_URL,
@@ -69,7 +69,7 @@ pipeline {
         stage('Stop fluent bit') {
             steps {
                 script {
-                    podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman = new Podman(this, null, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
                     intention.startAction("configure")
                     podman.run("fb-helper:${params.imageTag}",

@@ -53,7 +53,7 @@ pipeline {
             steps {
                 script {
                     intention.startAction("build")
-                    def podman = new Podman(this, null, "artifacts.developer.gov.bc.ca")
+                    def podman = new Podman(this, null, null, "artifacts.developer.gov.bc.ca")
                     podman.login(options: "-u ${env.ARTIFACTORY_USERNAME} -p ${env.ARTIFACTORY_PASSWORD}")
                     podman.build(
                         options: "--build-arg FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION} -v \$(pwd)/dropbox:/dropbox -f \$(pwd)/agent/Dockerfile-rhel${params.RHEL_VERSION}"
@@ -62,7 +62,7 @@ pipeline {
                     def shaHash = sh(script: "sha256sum \$(pwd)/dropbox/${FLUENT_BIT_VERSION}/fluent-bit-rhel${RHEL_VERSION}.tar.gz | awk '{printf \$1}'", returnStdout: true)
                     println shaHash
                     intention.patchAction("build", "{\"package\":{\"checksum\": \"sha256:${shaHash}\"}}")
-                    podman = new Podman(this, null, "releases-docker.jfrog.io/jfrog")
+                    podman = new Podman(this, null, null, "releases-docker.jfrog.io/jfrog")
                     wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: env.ARTIFACTORY_USERNAME, password: ARTIFACTORY_USERNAME], [var: env.ARTIFACTORY_PASSWORD, password: ARTIFACTORY_PASSWORD]]]) {
                         withEnv(["FLUENT_BIT_VERSION=${params.FLUENT_BIT_VERSION}", "RHEL_VERSION=${params.RHEL_VERSION}"]) {
                             podman.run("jfrog-cli-v2-jf:2.74.1",

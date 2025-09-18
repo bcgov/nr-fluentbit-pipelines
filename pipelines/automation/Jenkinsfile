@@ -54,7 +54,7 @@ pipeline {
         stage('Read Automation Queue') {
             steps {
                 script {
-                    def podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    def podman = new Podman(this, null, env.AUTHFILE, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.login(authfile: "${env.AUTHFILE}", options: "-u ${env.REGISTRY_USERNAME} -p ${env.REGISTRY_PASSWORD}")
                     def agentMap = [:]
                     // Read queue
