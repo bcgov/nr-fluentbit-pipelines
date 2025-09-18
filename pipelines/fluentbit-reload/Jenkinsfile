@@ -35,13 +35,13 @@ pipeline {
                     sh 'rm -rf fb && mkdir fb'
                     sh "git clone -b ${params.fbGitBranch} https://github.com/bcgov/nr-funbucks.git fb"
                     commonModule = load "pipelines/common.groovy"
-                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
+                    intention = new BrokerIntention(NR_BROKER_JWT, readJSON(file: 'scripts/intention-fb-configure.json'))
                     intention.setEventDetails(
                         userName: JenkinsUtil.getCauseUserId(currentBuild),
                         url: env.BUILD_URL,
                         reason: "Reload logs"
                     )
-                    intention.open(NR_BROKER_JWT)
+                    intention.open()
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
                     def vault = new Vault(vaultToken)

@@ -26,13 +26,13 @@ pipeline {
             }
             steps {
                 script {
-                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-configure.json'))
+                    intention = new BrokerIntention(NR_BROKER_JWT,readJSON(file: 'scripts/intention-fb-configure.json'))
                     intention.setEventDetails(
                         userName: JenkinsUtil.getCauseUserId(currentBuild),
                         url: env.BUILD_URL,
                         reason: "View agent version"
                     )
-                    intention.open(NR_BROKER_JWT, ttl: 600)
+                    intention.open(ttl: 600)
                     intention.startAction("login")
                     sh 'rm -rf fb && mkdir fb'
                     sh "git clone -b ${params.fbGitBranch} https://github.com/bcgov/nr-funbucks.git fb"

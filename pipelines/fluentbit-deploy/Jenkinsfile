@@ -59,7 +59,7 @@ pipeline {
                     env.HTTP_PROXY_URL = commonModule.getHttpProxy("${params.fluentbitHost}")
                     env.LOGS_PROXY_DISABLED = commonModule.getLogsProxyDisabled("${params.fluentbitHost}")
                     env.LOGS_HTTP_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
-                    intention = new BrokerIntention(readJSON(file: 'scripts/intention-fb-install.json'))
+                    intention = new BrokerIntention(NR_BROKER_JWT, readJSON(file: 'scripts/intention-fb-install.json'))
                     intention.setEventDetails(
                         userName: "${params.groupDeployment ? JenkinsUtil.getUpstreamCauseUserId(currentBuild) : JenkinsUtil.getCauseUserId(currentBuild)}",
                         url: env.BUILD_URL,
@@ -67,7 +67,7 @@ pipeline {
                         packageInstallationVersion: "${env.FB_FLUENTBIT_RELEASE}+${env.FB_OS_VARIANT}"
                     )
                     intention.intention.actions[1].cloud.target.instance.name = params.fluentbitHost
-                    intention.open(NR_BROKER_JWT)
+                    intention.open()
                     intention.startAction("login")
                     def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
                     def vault = new Vault(vaultToken)
