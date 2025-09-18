@@ -105,7 +105,7 @@ pipeline {
             steps {
                 script {
                     intention.startAction("install")
-                    podman = new Podman(this, null, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
+                    podman = new Podman(this, null, env.AUTHFILE, "artifacts.developer.gov.bc.ca/cc20-gen-docker-local")
                     podman.run("fb-helper:${params.imageTag}",
                         authfile: "${env.AUTHFILE}",
                         options: "-v \$(pwd)/files/ssh-config:/app/ssh-config -v \$(pwd)/scripts:/app/scripts -v \$(pwd)/fb:/app/fb -v \$(pwd)/files:/app/files -e 'FB_*'",
