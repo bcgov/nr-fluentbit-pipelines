@@ -25,7 +25,7 @@ pipeline {
                         packageBuildVersion: "${params.FLUENT_BIT_VERSION}+rhel${params.RHEL_VERSION}",
                         packageBuildBuildVersion: "v${params.FLUENT_BIT_VERSION}"
                     )
-                    if (!intention.open(ttl: 1600)) {
+                    if (!intention.open(ttl: 3200)) {
                         currentBuild.result = 'ABORTED'
                         error('Intention could not be opened')
                     }
