@@ -10,7 +10,7 @@
       "id": "login",
       "provision": ["token/self"],
       "service": {
-        "name": "fluent-bit",
+        "name": "fluentbit-agent-build",
         "project": "fluent",
         "environment": "tools"
       }
@@ -20,7 +20,7 @@
       "id": "build",
       "provision": [],
       "service": {
-        "name": "fluent-bit",
+        "name": "fluentbit-agent-build",
         "project": "fluent",
         "environment": "tools"
       },
