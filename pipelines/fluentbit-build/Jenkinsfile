@@ -11,7 +11,7 @@ pipeline {
         label Podman.AGENT_LABEL_WEB
     }
     environment {
-        APP_ROLE_ID = credentials('knox-vault-fluentbit-agent-build-role-id')
+        APP_ROLE_ID = credentials('knox-vault-fluent-bit-tools-role-id')
         NR_BROKER_JWT = credentials('nr-broker-jwt')
         AUTHFILE = "fluent-bit.auth.json"
     }
