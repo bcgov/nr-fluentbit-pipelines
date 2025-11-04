@@ -38,51 +38,57 @@ pipeline {
             }
             steps {
                 script {
-                    sh 'rm -rf fb && mkdir fb'
-                    sh "git clone -b ${params.fbGitBranch} https://github.com/bcgov/nr-funbucks.git fb"
-                    commonModule = load "pipelines/common.groovy"
-                    env.FB_HOSTNAME = "${params.fluentbitHost}"
-                    env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")
-                    env.FB_SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
-                    env.FB_FLUENTBIT_RELEASE = commonModule.getFluentBitRelease("${params.fluentbitHost}")
-                    if (env.FB_SERVER_OS != "linux" && env.FB_SERVER_OS != "windows") {
+                    try {
+                        sh 'rm -rf fb && mkdir fb'
+                        sh "git clone -b ${params.fbGitBranch} https://github.com/bcgov/nr-funbucks.git fb"
+                        commonModule = load "pipelines/common.groovy"
+                        env.FB_HOSTNAME = "${params.fluentbitHost}"
+                        env.FB_HOST = commonModule.getHost("${params.fluentbitHost}")
+                        env.FB_SERVER_OS = commonModule.getServerOS("${params.fluentbitHost}")
+                        env.FB_FLUENTBIT_RELEASE = commonModule.getFluentBitRelease("${params.fluentbitHost}")
+                        if (env.FB_SERVER_OS != "linux" && env.FB_SERVER_OS != "windows") {
+                            currentBuild.result = 'ABORTED'
+                            error('Invalid server OS')
+                        }
+                        env.FB_OS_VARIANT = commonModule.getOSVariant("${params.fluentbitHost}")
+                        env.FB_BIN_DIR = "${env.FB_SERVER_OS == "linux" ? "/sw_ux/bin" : "E:/sw_nt"}"
+                        env.FB_AGENT_ROOT = "${env.FB_SERVER_OS == "linux" ? "/apps_ux/agents" : "E:/apps_nt/agents"}"
+                        env.FB_TMP_DIR = "${env.FB_SERVER_OS == "linux" ? "/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}" : "E:/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}"}"
+                        env.FB_VAULT_CD_USER_FIELD = commonModule.getVaultCdUserField("${params.fluentbitHost}")
+                        env.FB_VAULT_CD_PASS_FIELD = commonModule.getVaultCdPassField("${params.fluentbitHost}")
+                        env.FB_VAULT_CD_PATH = commonModule.getVaultCdPath("${params.fluentbitHost}")
+                        env.HTTP_PROXY_URL = commonModule.getHttpProxy("${params.fluentbitHost}")
+                        env.LOGS_PROXY_DISABLED = commonModule.getLogsProxyDisabled("${params.fluentbitHost}")
+                        env.LOGS_HTTP_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
+                        intention = new BrokerIntention(NR_BROKER_JWT, readJSON(file: 'scripts/intention-fb-install.json'))
+                        intention.setEventDetails(
+                            userName: "${params.groupDeployment ? JenkinsUtil.getUpstreamCauseUserId(currentBuild) : JenkinsUtil.getCauseUserId(currentBuild)}",
+                            url: env.BUILD_URL,
+                            packageInstallationName: "fluent-bit-${env.FB_OS_VARIANT}",
+                            packageInstallationVersion: "${env.FB_FLUENTBIT_RELEASE}+${env.FB_OS_VARIANT}"
+                        )
+                        intention.intention.actions[1].cloud.target.instance.name = params.fluentbitHost
+                        intention.open()
+                        intention.startAction("login")
+                        def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
+                        def vault = new Vault(vaultToken)
+                        def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-apps/artifactory')
+                        env.REGISTRY_USERNAME = registryCreds['REGISTRY_USERNAME']
+                        env.REGISTRY_PASSWORD = registryCreds['REGISTRY_PASSWORD']
+                        def vault_cd_path = "${env.FB_VAULT_CD_PATH}"
+                        def cdCreds = vault.read(vault_cd_path.replaceFirst('/', '/data/'))
+                        def ciCreds = vault.read('apps/data/prod/jenkins/jenkins-apps/ci')
+                        env.FB_CD_USER = cdCreds[env.FB_VAULT_CD_USER_FIELD]
+                        env.FB_CD_PASS = cdCreds[env.FB_VAULT_CD_PASS_FIELD]
+                        env.FB_CI_USER = ciCreds.username_lowercase
+                        env.FB_CI_PASS = ciCreds.password
+                        vault.revokeToken()
+                        env.NO_PROXY = "${Vault.KNOX_URL}"
+                    } catch (Exception ex) {
+                        echo "Other exception occurred: $ex"
                         currentBuild.result = 'ABORTED'
-                        error('Invalid server OS')
+                        error('Quitting')
                     }
-                    env.FB_OS_VARIANT = commonModule.getOSVariant("${params.fluentbitHost}")
-                    env.FB_BIN_DIR = "${env.FB_SERVER_OS == "linux" ? "/sw_ux/bin" : "E:/sw_nt"}"
-                    env.FB_AGENT_ROOT = "${env.FB_SERVER_OS == "linux" ? "/apps_ux/agents" : "E:/apps_nt/agents"}"
-                    env.FB_TMP_DIR = "${env.FB_SERVER_OS == "linux" ? "/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}" : "E:/tmp/fluent-bit.${UUID.randomUUID().toString()[0..7]}"}"
-                    env.FB_VAULT_CD_USER_FIELD = commonModule.getVaultCdUserField("${params.fluentbitHost}")
-                    env.FB_VAULT_CD_PASS_FIELD = commonModule.getVaultCdPassField("${params.fluentbitHost}")
-                    env.FB_VAULT_CD_PATH = commonModule.getVaultCdPath("${params.fluentbitHost}")
-                    env.HTTP_PROXY_URL = commonModule.getHttpProxy("${params.fluentbitHost}")
-                    env.LOGS_PROXY_DISABLED = commonModule.getLogsProxyDisabled("${params.fluentbitHost}")
-                    env.LOGS_HTTP_PROXY = "${env.LOGS_PROXY_DISABLED == 'true' ? '' : env.HTTP_PROXY_URL}"
-                    intention = new BrokerIntention(NR_BROKER_JWT, readJSON(file: 'scripts/intention-fb-install.json'))
-                    intention.setEventDetails(
-                        userName: "${params.groupDeployment ? JenkinsUtil.getUpstreamCauseUserId(currentBuild) : JenkinsUtil.getCauseUserId(currentBuild)}",
-                        url: env.BUILD_URL,
-                        packageInstallationName: "fluent-bit-${env.FB_OS_VARIANT}",
-                        packageInstallationVersion: "${env.FB_FLUENTBIT_RELEASE}+${env.FB_OS_VARIANT}"
-                    )
-                    intention.intention.actions[1].cloud.target.instance.name = params.fluentbitHost
-                    intention.open()
-                    intention.startAction("login")
-                    def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
-                    def vault = new Vault(vaultToken)
-                    def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-apps/artifactory')
-                    env.REGISTRY_USERNAME = registryCreds['REGISTRY_USERNAME']
-                    env.REGISTRY_PASSWORD = registryCreds['REGISTRY_PASSWORD']
-                    def vault_cd_path = "${env.FB_VAULT_CD_PATH}"
-                    def cdCreds = vault.read(vault_cd_path.replaceFirst('/', '/data/'))
-                    def ciCreds = vault.read('apps/data/prod/jenkins/jenkins-apps/ci')
-                    env.FB_CD_USER = cdCreds[env.FB_VAULT_CD_USER_FIELD]
-                    env.FB_CD_PASS = cdCreds[env.FB_VAULT_CD_PASS_FIELD]
-                    env.FB_CI_USER = ciCreds.username_lowercase
-                    env.FB_CI_PASS = ciCreds.password
-                    vault.revokeToken()
-                    env.NO_PROXY = "${Vault.KNOX_URL}"
                 }
                 sh 'mkdir $(pwd)/fb/output'
             }
@@ -190,9 +196,11 @@ pipeline {
         }
     }
     post {
-        success {
+        failure {
             script {
-                intention.close(true)
+                if (intention) {
+                    println intention.close(false)
+                }
             }
         }
         unstable {
@@ -202,11 +210,9 @@ pipeline {
                 }
             }
         }
-        failure {
+        success {
             script {
-                if (intention) {
-                    println intention.close(false)
-                }
+                println intention.close(true)
             }
         }
     }
