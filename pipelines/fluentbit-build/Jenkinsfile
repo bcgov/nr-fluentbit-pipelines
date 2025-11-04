@@ -30,11 +30,11 @@ pipeline {
                         sh 'rm -f -r $(pwd)/dropbox'
                         sh 'mkdir $(pwd)/dropbox'
                         sh 'chmod 777 $(pwd)/dropbox'
+                    } catch (Exception ex) {
+                        echo "Other exception occurred: $ex"
+                        currentBuild.result = 'ABORTED'
+                        error('Quitting')
                     }
-                } catch (Exception ex) {
-                    echo "Other exception occurred: $ex"
-                    currentBuild.result = 'ABORTED'
-                    error('Quitting')
                 }
             }
         }
