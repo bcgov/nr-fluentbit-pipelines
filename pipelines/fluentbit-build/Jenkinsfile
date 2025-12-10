@@ -11,8 +11,7 @@ pipeline {
         label Podman.AGENT_LABEL_WEB
     }
     environment {
-        APP_ROLE_ID = credentials('knox-vault-fluent-bit-tools-role-id')
-        NR_BROKER_JWT = credentials('nr-broker-jwt')
+        NR_BROKER_JWT = credentials('nr-fluentbit-broker-jwt')
     }
     stages {
         stage('Setup') {
@@ -43,7 +42,7 @@ pipeline {
                 script {
                     try {
                         intention.startAction("login")
-                        def vaultToken = intention.provisionToken("login", APP_ROLE_ID)
+                        def vaultToken = intention.provisionToken("login")
                         def vault = new Vault(vaultToken)
                         def buildCreds = vault.read("apps/data/tools/fluent/fluent-bit")
                         env.ARTIFACTORY_USERNAME = buildCreds['artifactory_username']

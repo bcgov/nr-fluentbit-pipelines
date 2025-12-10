@@ -13,8 +13,7 @@ pipeline {
     }
     environment {
         FB_AGENT_ROOT = "/apps_ux/agents"
-        CONFIG_ROLE_ID = credentials('knox-jenkins-jenkins-apps-prod-role-id')
-        NR_BROKER_JWT = credentials('nr-broker-jwt')
+        NR_BROKER_JWT = credentials('nr-fluentbit-broker-jwt')
         IMAGE_TAG = "${params.imageTag}"
         AUTHFILE = "fluent-bit.auth.json"
     }
@@ -42,7 +41,7 @@ pipeline {
         stage('Status') {
             steps {
                 script {
-                    def vaultToken = intention.provisionToken("login", CONFIG_ROLE_ID)
+                    def vaultToken = intention.provisionToken("login")
                     def vault = new Vault(vaultToken)
                     def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-apps/artifactory')
                     env.REGISTRY_USERNAME = registryCreds['REGISTRY_USERNAME']

@@ -24,9 +24,8 @@ pipeline {
         FB_WINSW_RELEASE = "v2.12.0"
         FB_BROKER_URL = "https://broker.io.nrs.gov.bc.ca"
         FB_BUILD_URL = "${env.BUILD_URL}"
-        FB_CONFIG_ROLE_ID = credentials('knox-jenkins-jenkins-apps-prod-role-id')
+        NR_BROKER_JWT = credentials('nr-fluentbit-broker-jwt')
         FB_ROLE_ID = credentials('knox-vault-fluentbit-app-role-id')
-        NR_BROKER_JWT = credentials('nr-broker-jwt')
         IMAGE_TAG = "${params.imageTag}"
         AUTHFILE = "fluent-bit.auth.json"
     }
@@ -70,7 +69,7 @@ pipeline {
                         intention.intention.actions[1].cloud.target.instance.name = params.fluentbitHost
                         intention.open()
                         intention.startAction("login")
-                        def vaultToken = intention.provisionToken("login", FB_CONFIG_ROLE_ID)
+                        def vaultToken = intention.provisionToken("login")
                         def vault = new Vault(vaultToken)
                         def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-apps/artifactory')
                         env.REGISTRY_USERNAME = registryCreds['REGISTRY_USERNAME']

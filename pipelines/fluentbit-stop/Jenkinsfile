@@ -13,8 +13,7 @@ pipeline {
         label Podman.AGENT_LABEL_APP
     }
     environment {
-        CONFIG_ROLE_ID = credentials('knox-jenkins-jenkins-apps-prod-role-id')
-        NR_BROKER_JWT = credentials('nr-broker-jwt')
+        NR_BROKER_JWT = credentials('nr-fluentbit-broker-jwt')
         FB_INSTALL_USER = "wwwadm"
         FB_RUN_USER = "wwwsvr"
         FB_S6_SERVICE_HOME = "/apps_ux/s6_services"
@@ -41,7 +40,7 @@ pipeline {
                     )
                     intention.open()
                     intention.startAction("login")
-                    def vaultToken = intention.provisionToken("login", CONFIG_ROLE_ID)
+                    def vaultToken = intention.provisionToken("login")
                     def vault = new Vault(vaultToken)
                     def registryCreds = vault.read('apps/data/prod/jenkins/jenkins-apps/artifactory')
                     env.REGISTRY_USERNAME = registryCreds['REGISTRY_USERNAME']
