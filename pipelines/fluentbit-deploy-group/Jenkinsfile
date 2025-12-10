@@ -7,7 +7,7 @@ pipeline {
     }
     environment {
         BROKER_URL = 'https://broker.io.nrs.gov.bc.ca'
-        BROKER_JWT = credentials('nr-broker-jwt')
+        BROKER_JWT = credentials('nr-fluentbit-broker-jwt')
         SRV_GROUP = "${params.srvGroup}"
         ENV_GROUP = "${params.envGroup}"
     }
