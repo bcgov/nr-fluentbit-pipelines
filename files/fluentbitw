@@ -1,5 +1,19 @@
 #!/bin/sh
 
+# When called by vault-agent as exec target, AWS credentials are injected as env vars.
+# Write the credentials file and start fluent-bit directly.
+if [ -n "$AWS_ACCESS_KEY_ID" ]; then
+  SOURCE="${BASH_SOURCE[0]:-$0}"
+  SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+  FLUENT_HOME="$( dirname "$SCRIPT_DIR" )"
+  CREDS_FILE="${FLUENT_HOME}/conf/.aws-credentials"
+  printf '[default]\naws_access_key_id = %s\naws_secret_access_key = %s\n' \
+    "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" > "$CREDS_FILE"
+  chmod 600 "$CREDS_FILE"
+  export AWS_SHARED_CREDENTIALS_FILE="$CREDS_FILE"
+  cd "${FLUENT_HOME}/conf"
+  exec "${FLUENT_HOME}/bin/fluent-bit" -c "${FLUENT_HOME}/conf/fluent-bit.conf"
+fi
 # https://stackoverflow.com/a/246128
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
@@ -43,6 +57,11 @@ TOKEN_ID=$(VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$TOKEN /sw_ux/bin/vault token look
 if [ -z "$TOKEN_ID" ]; then
   /sw_ux/s6/bin/s6-svc -d "$S6_SERVICE_DIR"
 else
-  # run fluent bit
-  exec /sw_ux/bin/envconsul "-config=${FLUENT_HOME}/conf/fluent-bit.hcl"
+  # write token file for vault-agent token_file auth method
+  printf '%s' "$TOKEN" > "${SCRIPT_DIR}/.token"
+  chmod 600 "${SCRIPT_DIR}/.token"
+  # run vault-agent (handles token renewal, writes credentials file, and execs fluent-bit)
+  export HTTP_PROXY="$HTTP_PROXY"
+  export NO_PROXY="knox.io.nrs.gov.bc.ca,169.254.169.254"
+  exec /sw_ux/bin/vault agent -config="${FLUENT_HOME}/conf/fluent-bit.hcl"
 fi
