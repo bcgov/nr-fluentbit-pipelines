@@ -25,7 +25,7 @@ pipeline {
         FB_BROKER_URL = "https://broker.io.nrs.gov.bc.ca"
         FB_BUILD_URL = "${env.BUILD_URL}"
         NR_BROKER_JWT = credentials('nr-fluentbit-broker-jwt')
-        FB_ROLE_ID = credentials('knox-vault-fluentbit-role-id')
+        FB_ROLE_ID = credentials('knox-vault-apm-onpremise-agent-role-id')
         IMAGE_TAG = "${params.imageTag}"
         AUTHFILE = "fluent-bit.auth.json"
     }
@@ -64,7 +64,7 @@ pipeline {
                             userName: "${params.groupDeployment ? JenkinsUtil.getUpstreamCauseUserId(currentBuild) : JenkinsUtil.getCauseUserId(currentBuild)}",
                             url: env.BUILD_URL,
                             packageInstallationName: "fluent-bit-${env.FB_OS_VARIANT}",
-                            packageInstallationVersion: "${env.FB_FLUENTBIT_RELEASE}+${env.FB_OS_VARIANT}"
+                            packageInstallationVersion: ""
                         )
                         intention.intention.actions[1].cloud.target.instance.name = params.fluentbitHost
                         intention.open()
@@ -82,7 +82,7 @@ pipeline {
                         env.FB_CI_USER = ciCreds.username_lowercase
                         env.FB_CI_PASS = ciCreds.password
                         vault.revokeToken()
-                        env.NO_PROXY = "${Vault.KNOX_URL}"
+                        env.NO_PROXY = "${Vault.KNOX_URL.replaceFirst('https?://', '')}"
                     } catch (Exception ex) {
                         echo "Other exception occurred: $ex"
                         currentBuild.result = 'ABORTED'
@@ -174,7 +174,7 @@ pipeline {
             steps {
                 script {
                     intention.startAction("provision")
-                    def wrapped_fb_secret_id = intention.provisionSecretId("provision", FB_ROLE_ID)
+                    def wrapped_fb_secret_id = intention.provisionSecretId("provision")
                     env.WRAPPED_FB_SECRET_ID = wrapped_fb_secret_id
                 }
             }

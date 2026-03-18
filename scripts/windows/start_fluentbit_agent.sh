@@ -2,9 +2,12 @@
 set +x
 
 sshpass -p $FB_CD_PASS ssh -F /app/ssh-config -q $FB_CD_USER@$FB_HOST powershell.exe -Command -<<EOF
+$ErrorActionPreference = "Stop"
 \$env:VAULT_ADDR = "$VAULT_ADDR"
 \$env:VAULT_TOKEN = "\$VAULT_TOKEN"
-\$env:FB_SECRET_ID = ($FB_BIN_DIR/vault/vault.exe unwrap -field=secret_id $WRAPPED_FB_SECRET_ID)
+\$env:VAULT_TOKEN = "$WRAPPED_FB_SECRET_ID"
+\$env:FB_SECRET_ID = ($FB_BIN_DIR/vault/vault.exe unwrap -field=secret_id)
+if (\$LASTEXITCODE -ne 0) { exit \$LASTEXITCODE }
 
 # if $FB_AGENT defined, deploy one; else deploy all in the list
 if ("$FB_AGENT".Length -eq 0) {
@@ -23,12 +26,13 @@ if (\$AGENTS.count -gt 0) {
       echo "Attempting to revoke previous token..."
       \$PREVIOUS_TOKEN = Select-String -Path "\$AGENT_HOME/bin/\${AGENT}.xml" -Pattern '(hvs\.[\D\d][^"]+)' | %{\$_.matches.value}
       \$env:VAULT_TOKEN = "\$PREVIOUS_TOKEN"
-      $FB_BIN_DIR/vault/vault.exe token revoke -self
+      $FB_BIN_DIR/vault/vault.exe token revoke -self; if ($LASTEXITCODE -ne 0) { Write-Warning "Token revoke failed (may already be expired)" }
     }
     # generate and deploy new app token to WinSW service configuration file
     \$env:VAULT_TOKEN = "\$VAULT_TOKEN"
     \$APP_TOKEN = ($FB_BIN_DIR/vault/vault.exe write -force -field=token auth/vs_apps_approle/login role_id=$FB_ROLE_ID secret_id=\$env:FB_SECRET_ID)
-    Get-Content "\$AGENT_HOME/bin/\${AGENT}.xml" | % { 
+    if (\$LASTEXITCODE -ne 0) { exit \$LASTEXITCODE }
+    Get-Content "\$AGENT_HOME/bin/\${AGENT}.xml" | % {
       \$_ -replace '({{vault_template_token}})|(hvs\.[\D\d][^"]+)',"\$APP_TOKEN"} | Set-Content "\$AGENT_HOME/bin/\${AGENT}.xml.bak" -Force
     Copy-Item -Path "\$AGENT_HOME/bin/\${AGENT}.xml.bak" -Destination "\$AGENT_HOME/bin/\${AGENT}.xml" -Force
     # start agent

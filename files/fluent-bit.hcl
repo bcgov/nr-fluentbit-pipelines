@@ -1,6 +1,5 @@
 vault {
   address = "https://knox.io.nrs.gov.bc.ca"
-  renew_token = true
   retry {
     enabled = true
     attempts = 12
@@ -9,17 +8,35 @@ vault {
   }
 }
 
-secret {
-    no_prefix = true
-    path = "apps/prod/fluent/fluent-bit"
+auto_auth {
+  method "token_file" {
+    config = {
+      token_file_path = "{{ apm_agent_home }}/bin/.token"
+    }
+  }
+}
+
+template_config {
+  exit_on_retry_failure = true
+}
+
+env_template "AWS_ACCESS_KEY_ID" {
+  contents             = "{{ with secret \"apps/prod/apm/apm-onpremise-agent/aws-ssm-sync/kinesis\" }}{{ .Data.data.AWS_ACCESS_KEY_ID }}{{ end }}"
+  error_on_missing_key = true
+}
+
+env_template "AWS_SECRET_ACCESS_KEY" {
+  contents             = "{{ with secret \"apps/prod/apm/apm-onpremise-agent/aws-ssm-sync/kinesis\" }}{{ .Data.data.AWS_SECRET_ACCESS_KEY }}{{ end }}"
+  error_on_missing_key = true
+}
+
+env_template "AWS_KINESIS_ROLE_ARN" {
+  contents             = "{{ with secret \"apps/prod/apm/apm-onpremise-agent/aws-ssm-sync/kinesis\" }}{{ .Data.data.AWS_KINESIS_ROLE_ARN }}{{ end }}"
+  error_on_missing_key = true
 }
 
 exec {
-  command = ["{{ apm_agent_home }}/bin/fluent-bit", "-c", "{{ apm_agent_home }}/conf/fluent-bit.conf"]
-  splay = "5s"
-  env {
-    pristine = false
-    custom = ["HTTP_PROXY=$HTTP_PROXY","NO_PROXY=https://knox.io.nrs.gov.bc.ca,169.254.169.254"]
-  }
-  kill_timeout = "5s"
+  command                   = ["{{ apm_agent_home }}/bin/fluentbitw"]
+  restart_on_secret_changes = "always"
+  restart_stop_signal       = "SIGTERM"
 }

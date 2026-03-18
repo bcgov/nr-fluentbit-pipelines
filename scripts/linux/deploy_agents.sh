@@ -63,7 +63,7 @@ for agent in \${AGENTS[@]} ; do
     cp $FB_TMP_DIR/files/.env \$AGENT_HOME/bin/.env.template
     cp $FB_TMP_DIR/files/down-signal $FB_S6_SERVICE_HOME\/\$AGENT
     chmod 664 $FB_S6_SERVICE_HOME\/\$AGENT/down-signal
-    sed -e "s,\\\$S6_SERVICE_DIR,$FB_S6_SERVICE_HOME\/\$AGENT,g;s/AGENT_NAME=.*/AGENT_NAME=\""\$AGENT"\"/g" $FB_TMP_DIR/files/.env > \$AGENT_HOME/bin/.env.template
+    sed -e "s,\\\$S6_SERVICE_DIR,$FB_S6_SERVICE_HOME\/\$AGENT,g;s/AGENT_NAME=.*/AGENT_NAME=\""\$AGENT"\"/g;s,HTTP_PROXY=.*,HTTP_PROXY=\"$HTTP_PROXY\",g" $FB_TMP_DIR/files/.env > \$AGENT_HOME/bin/.env.template
 
     ln -sfn \$AGENT_HOME/bin/fluentbitw $FB_S6_SERVICE_HOME/\$AGENT/run
     chmod 664 \$AGENT_HOME/bin/.env.template
