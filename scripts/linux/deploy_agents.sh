@@ -60,14 +60,16 @@ for agent in \${AGENTS[@]} ; do
     cp -R $FB_TMP_DIR/output/\$AGENT/* \$AGENT_HOME/conf
     sed -e "s,\\\$HTTP_PROXY,$HTTP_PROXY,g" -e "s,{{ apm_agent_home }},\$AGENT_HOME,g" $FB_TMP_DIR/files/fluent-bit.hcl > \$AGENT_HOME/conf/fluent-bit.hcl
     cp $FB_TMP_DIR/files/fluentbitw \$AGENT_HOME/bin
+    cp $FB_TMP_DIR/files/fluentbit-finish \$AGENT_HOME/bin
     cp $FB_TMP_DIR/files/.env \$AGENT_HOME/bin/.env.template
     cp $FB_TMP_DIR/files/down-signal $FB_S6_SERVICE_HOME\/\$AGENT
     chmod 664 $FB_S6_SERVICE_HOME\/\$AGENT/down-signal
     sed -e "s,\\\$S6_SERVICE_DIR,$FB_S6_SERVICE_HOME\/\$AGENT,g;s/AGENT_NAME=.*/AGENT_NAME=\""\$AGENT"\"/g;s,HTTP_PROXY=.*,HTTP_PROXY=\"$HTTP_PROXY\",g" $FB_TMP_DIR/files/.env > \$AGENT_HOME/bin/.env.template
 
     ln -sfn \$AGENT_HOME/bin/fluentbitw $FB_S6_SERVICE_HOME/\$AGENT/run
+    ln -sfn \$AGENT_HOME/bin/fluentbit-finish $FB_S6_SERVICE_HOME/\$AGENT/finish
     chmod 664 \$AGENT_HOME/bin/.env.template
-    chmod 755 \$AGENT_HOME/bin/fluent-bit \$AGENT_HOME/bin/fluentbitw
+    chmod 755 \$AGENT_HOME/bin/fluent-bit \$AGENT_HOME/bin/fluentbitw \$AGENT_HOME/bin/fluentbit-finish
     chmod -R a+r,a+X \$AGENT_HOME/conf
 done
 exit
