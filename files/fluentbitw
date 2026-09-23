@@ -55,11 +55,18 @@ TOKEN=$(cat "${SCRIPT_DIR}/.env" | grep VAULT_TOKEN | awk -F '"' '{print $2}')
 TOKEN_ID=$(VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$TOKEN /sw_ux/bin/vault token lookup -format json | /sw_ux/bin/jq -r '.data.id')
 
 if [ -z "$TOKEN_ID" ]; then
+  echo "fluentbitw: vault token check failed for ${AGENT_NAME:-$FLUENT_HOME}, bringing the service down" >&2
   /sw_ux/s6/bin/s6-svc -d "$S6_SERVICE_DIR"
 else
   # write token file for vault-agent token_file auth method
   printf '%s' "$TOKEN" > "${SCRIPT_DIR}/.token"
   chmod 600 "${SCRIPT_DIR}/.token"
+  # a vault agent that exited without stopping its fluent-bit child leaves it
+  # running with credentials nothing will refresh, so clear any leftovers
+  # before starting a new one (see fluentbit-finish)
+  if [ -x "${SCRIPT_DIR}/fluentbit-finish" ]; then
+    "${SCRIPT_DIR}/fluentbit-finish" "${SCRIPT_DIR}"
+  fi
   # run vault-agent (handles token renewal, writes credentials file, and execs fluent-bit)
   export HTTP_PROXY="$HTTP_PROXY"
   export NO_PROXY="knox.io.nrs.gov.bc.ca,169.254.169.254"

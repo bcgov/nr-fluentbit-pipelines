@@ -1,0 +1,79 @@
+#!/bin/sh
+
+# s6 runs this script every time the supervised process exits, before the
+# service is started again. For this service the supervised process is the
+# vault agent, which normally stops its fluent-bit child on the way out.
+#
+# It does not always do so: when the agent exits because its templates could
+# not be rendered (exit_on_retry_failure), it returns without stopping the
+# child. The child is then reparented to init, keeps the credentials it was
+# started with, and keeps retrying with no supervisor to restart or stop it.
+#
+# Kill anything left over from this agent so it cannot keep running
+# unsupervised. Only processes running this agent's own copy of the fluent-bit
+# binary are touched, so other agents on the same host are never affected.
+#
+# s6 runs finish scripts in the service directory and kills them after
+# timeout-finish (5 seconds by default), so this must stay well inside that.
+#
+# Usage:
+#   finish              run by s6 in the service directory, reads ./run
+#   finish <bin dir>    used by fluentbitw to sweep before starting an agent
+
+if [ -n "$1" ]; then
+  AGENT_BIN_DIR="$1"
+else
+  # ./run is a symlink to <agent home>/bin/fluentbitw
+  RUN_TARGET="$(readlink -f ./run 2>/dev/null)"
+  [ -n "$RUN_TARGET" ] || exit 0
+  AGENT_BIN_DIR="$(dirname "$RUN_TARGET")"
+fi
+
+FLUENT_BIT="$(readlink -f "${AGENT_BIN_DIR}/fluent-bit" 2>/dev/null)"
+[ -n "$FLUENT_BIT" ] || exit 0
+
+# Processes running this agent's fluent-bit binary. /proc/<pid>/exe holds the
+# resolved path, with " (deleted)" appended when the binary has been replaced
+# by a later deployment. Other users' processes are not readable and are
+# skipped, which is fine: the agents all run as the same user.
+leftovers() {
+  for proc_dir in /proc/[0-9]*; do
+    exe="$(readlink "${proc_dir}/exe" 2>/dev/null)" || continue
+    exe="${exe% (deleted)}"
+    [ "$exe" = "$FLUENT_BIT" ] || continue
+    echo "${proc_dir#/proc/}"
+  done
+}
+
+pids="$(leftovers)"
+[ -n "$pids" ] || exit 0
+
+echo "fluentbit-finish: stopping leftover fluent-bit for ${AGENT_BIN_DIR}:" $pids
+for pid in $pids; do
+  kill -TERM "$pid" 2>/dev/null
+done
+
+# Give fluent-bit a moment to exit, then stop waiting. Everything here has to
+# be done before s6's timeout-finish.
+attempt=0
+while [ "$attempt" -lt 2 ]; do
+  sleep 1
+  [ -n "$(leftovers)" ] || exit 0
+  attempt=$((attempt + 1))
+done
+
+for pid in $(leftovers); do
+  echo "fluentbit-finish: fluent-bit ${pid} did not stop, sending SIGKILL"
+  kill -KILL "$pid" 2>/dev/null
+done
+
+# Anything still here could not be signalled, which would mean it is running as
+# another user. Say so: it is still shipping logs with credentials nobody is
+# refreshing, and it needs to be dealt with by hand.
+sleep 1
+still_running="$(leftovers)"
+if [ -n "$still_running" ]; then
+  echo "fluentbit-finish: could not stop fluent-bit:" $still_running >&2
+fi
+
+exit 0
