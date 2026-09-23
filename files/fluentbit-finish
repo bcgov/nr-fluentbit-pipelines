@@ -1,4 +1,5 @@
 #!/bin/sh
+set -u
 
 # s6 runs this script every time the supervised process exits, before the
 # service is started again. For this service the supervised process is the
@@ -20,17 +21,17 @@
 #   finish              run by s6 in the service directory, reads ./run
 #   finish <bin dir>    used by fluentbitw to sweep before starting an agent
 
-if [ -n "$1" ]; then
+if [ -n "${1:-}" ]; then
   AGENT_BIN_DIR="$1"
 else
   # ./run is a symlink to <agent home>/bin/fluentbitw
   RUN_TARGET="$(readlink -f ./run 2>/dev/null)"
-  [ -n "$RUN_TARGET" ] || exit 0
+  [ -n "${RUN_TARGET:-}" ] || exit 0
   AGENT_BIN_DIR="$(dirname "$RUN_TARGET")"
 fi
 
 FLUENT_BIT="$(readlink -f "${AGENT_BIN_DIR}/fluent-bit" 2>/dev/null)"
-[ -n "$FLUENT_BIT" ] || exit 0
+[ -n "${FLUENT_BIT:-}" ] || exit 0
 
 # Processes running this agent's fluent-bit binary. /proc/<pid>/exe holds the
 # resolved path, with " (deleted)" appended when the binary has been replaced
@@ -41,30 +42,42 @@ leftovers() {
     exe="$(readlink "${proc_dir}/exe" 2>/dev/null)" || continue
     exe="${exe% (deleted)}"
     [ "$exe" = "$FLUENT_BIT" ] || continue
-    echo "${proc_dir#/proc/}"
+    printf '%s\n' "${proc_dir#/proc/}"
+  done | sort -n
+}
+
+kill_term() {
+  for pid in $1; do
+    if kill -TERM "$pid" 2>/dev/null; then
+      :
+    else
+      echo "fluentbit-finish: could not signal pid ${pid} with SIGTERM" >&2
+    fi
   done
 }
 
 pids="$(leftovers)"
-[ -n "$pids" ] || exit 0
+[ -n "${pids:-}" ] || exit 0
 
 echo "fluentbit-finish: stopping leftover fluent-bit for ${AGENT_BIN_DIR}:" $pids
-for pid in $pids; do
-  kill -TERM "$pid" 2>/dev/null
-done
+kill_term "$pids"
 
 # Give fluent-bit a moment to exit, then stop waiting. Everything here has to
-# be done before s6's timeout-finish.
+# be done before s6's timeout-finish. A short grace period is intentional, but
+# we re-check the exact set of still-running pids before escalating.
 attempt=0
-while [ "$attempt" -lt 2 ]; do
+while [ "$attempt" -lt 3 ]; do
   sleep 1
-  [ -n "$(leftovers)" ] || exit 0
+  remaining="$(leftovers)"
+  [ -n "${remaining:-}" ] || exit 0
   attempt=$((attempt + 1))
 done
 
 for pid in $(leftovers); do
   echo "fluentbit-finish: fluent-bit ${pid} did not stop, sending SIGKILL"
-  kill -KILL "$pid" 2>/dev/null
+  if ! kill -KILL "$pid" 2>/dev/null; then
+    echo "fluentbit-finish: could not signal pid ${pid} with SIGKILL" >&2
+  fi
 done
 
 # Anything still here could not be signalled, which would mean it is running as
@@ -72,7 +85,7 @@ done
 # refreshing, and it needs to be dealt with by hand.
 sleep 1
 still_running="$(leftovers)"
-if [ -n "$still_running" ]; then
+if [ -n "${still_running:-}" ]; then
   echo "fluentbit-finish: could not stop fluent-bit:" $still_running >&2
 fi
 
